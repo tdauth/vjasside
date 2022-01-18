@@ -3,6 +3,7 @@
 #include "vjassparser.h"
 #include "vjassast.h"
 #include "vjassfunction.h"
+#include "vjasskeyword.h"
 
 VJassParser::VJassParser()
 {
@@ -38,9 +39,9 @@ VJassAst VJassParser::parse(QString content) {
         const QString normalizedLine = line.trimmed();
         // TODO tokenize by keeping the column positions and add the comments (block comments and final line comments) to them.
         // We need the columns and lines to highlight the document.
-        const QList<QString> tokens = normalizedLine.split(QRegularExpression("\\s"));
+        const QList<QString> tokens = normalizedLine.split(QRegularExpression("\\s+")); // TODO is not empty if the line is empty
 
-        if (tokens.size() > 0) {
+        if (!normalizedLine.isEmpty() && tokens.size() > 0) {
             const QString normalizedToken = tokens.at(0).trimmed();
 
             // function
@@ -222,6 +223,18 @@ VJassAst VJassParser::parse(QString content) {
             else {
                 ast.addError(l, c, "Unknown token " + line);
             }
+        } else {
+            VJassKeyword *functionKeyword = new VJassKeyword(l, c);
+            functionKeyword->setKeyword("function");
+            ast.addCodeCompletionSuggestion(functionKeyword);
+
+            VJassKeyword *globalsKeyword = new VJassKeyword(l, c);
+            globalsKeyword->setKeyword("globals");
+            ast.addCodeCompletionSuggestion(globalsKeyword);
+
+            VJassKeyword *constantKeyword = new VJassKeyword(l, c);
+            constantKeyword->setKeyword("constant");
+            ast.addCodeCompletionSuggestion(constantKeyword);
         }
 
         l++;

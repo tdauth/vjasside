@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTreeWidget>
+#include <QModelIndex>
 
 #include "vjassparser.h"
 
@@ -22,9 +24,13 @@ public slots:
 
     void updateSyntaxErrors();
 
+    void clickPopupItem(const QModelIndex &index);
+
 private:
     Ui::MainWindow *ui;
 
     VJassParser vjassParser;
+
+    QTreeWidget *popup;
 };
 #endif // MAINWINDOW_H

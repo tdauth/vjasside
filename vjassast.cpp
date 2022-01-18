@@ -13,7 +13,13 @@ VJassAst::~VJassAst() {
         child = nullptr;
     }
 
+    for (VJassAst *codeCompletionSuggestion : codeCompletionSuggestions) {
+        delete codeCompletionSuggestion;
+        codeCompletionSuggestion = nullptr;
+    }
+
     children.clear();
+    codeCompletionSuggestions.clear();
 }
 
 
@@ -50,6 +56,10 @@ QList<VJassAst*> VJassAst::getChildren() {
     return children;
 }
 
+QList<VJassAst*> VJassAst::getCodeCompletionSuggestions() {
+    return codeCompletionSuggestions;
+}
+
 int VJassAst::getLine() {
     return line;
 }
@@ -66,10 +76,24 @@ void VJassAst::addChild(VJassAst *child) {
     this->children.push_back(child);
 }
 
+void VJassAst::addCodeCompletionSuggestion(VJassAst *codeCompletionSuggestion) {
+    this->codeCompletionSuggestions.push_back(codeCompletionSuggestion);
+}
+
 void VJassAst::addComment(const QString &comment) {
     comments.push_back(comment);
 }
 
 const QList<QString>& VJassAst::getComments() {
     return comments;
+}
+
+QString VJassAst::toString() {
+    QString result = "";
+
+    for (VJassAst *child : getChildren()) {
+        result += child->toString();
+    }
+
+    return result;
 }
