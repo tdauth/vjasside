@@ -9,6 +9,8 @@ const QString VJassToken::KEYWORD_RETURNS = "returns";
 const QString VJassToken::KEYWORD_ENDFUNCTION = "endfunction";
 const QString VJassToken::KEYWORD_GLOBALS = "globals";
 const QString VJassToken::KEYWORD_CONSTANT = "constant";
+const QString VJassToken::KEYWORD_TYPE = "type";
+const QString VJassToken::KEYWORD_NATIVE = "native";
 
 const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_FUNCTION,
@@ -17,7 +19,9 @@ const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_RETURNS,
     VJassToken::KEYWORD_ENDFUNCTION,
     VJassToken::KEYWORD_GLOBALS,
-    VJassToken::KEYWORD_CONSTANT
+    VJassToken::KEYWORD_CONSTANT,
+    VJassToken::KEYWORD_TYPE,
+    VJassToken::KEYWORD_NATIVE
 };
 
 VJassToken::VJassToken(const QString &value, int line, int column, Type type) : value(value), line(line), column(column), type(type)
@@ -53,6 +57,10 @@ bool VJassToken::isValidType() const {
 
 bool VJassToken::isValidIdentifier() const {
     return QRegularExpression("[a-zA-Z0-9]+").match(getValue()).hasMatch() && !VJassToken::KEYWRODS_ALL.contains(getValue());
+}
+
+bool VJassToken::isValidKeyword() const {
+    return KEYWRODS_ALL.contains(getValue());
 }
 
 VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {

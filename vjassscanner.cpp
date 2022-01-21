@@ -12,7 +12,8 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
     int line = 0;
     int column = 0;
 
-    for (int i = 0; i < content.size(); i++) {
+    for (int i = 0; i < content.size(); ) {
+        // TODO Avoid copying at all cost -> some string view
         QString currentContent = content.mid(i);
 
         bool matched = false;
@@ -22,6 +23,8 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 result.push_back(VJassToken(keyword, line, column, VJassToken::typeFromKeyword(keyword)));
                 i += keyword.length();
                 column += keyword.length();
+
+                qDebug() << "Matched keyword" << keyword << " with length" << keyword.length();
 
                 matched = true;
 
@@ -38,30 +41,33 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 matched = true;
             } else if (currentContent.startsWith(" ") || currentContent.startsWith("\t")) {
-                int j = 0;
+                int j = i + 1;
 
-                for (j = 0;  j < content.length(); ++j) {
+                for ( ; j < content.length(); ++j) {
                     if (content.mid(j, 1) != " " && content.mid(j, 1) != "\t") {
                         break;
                     }
                 }
 
-                QString whiteSpaces = content.mid(0, j);
+                int length = j - i;
+                qDebug() << "Whitespaces with length " << length;
 
                 if (!dropWhiteSpaces) {
-                    result.push_back(VJassToken(whiteSpaces, line, column, VJassToken::WhiteSpace));
+                    result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::WhiteSpace));
                 }
 
-                i += whiteSpaces.length();
-                column += whiteSpaces.length();
-            } else if (currentContent == ",") {
+                i += length;
+                column += length;
+
+                matched = true;
+            } else if (currentContent.startsWith(",")) {
                 result.push_back(VJassToken(",", line, column, VJassToken::Separator));
                 i += 1;
                 column += 1;
 
                 matched = true;
             // line comment
-            } else if (currentContent == "/" && i + 1 < content.size() && content.at(i + 1) == '/') {
+            } else if (currentContent.startsWith("//")) {
                 int j = i;
 
                 for ( ; j < content.size(); j++) {
@@ -73,10 +79,10 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 result.push_back(VJassToken(content.mid(i, j - i), line, column, VJassToken::Comment));
 
                 column += j - i;
-                i = j - 1;
+                i += j - 1;
             // block comment
-            }  else if (currentContent == "/" && i + 1 < content.size() && content.at(i + 1) == '*') {
-                int j = i;
+            }  else if (currentContent.startsWith("/*")) {
+                int j = i + 2;
                 int columns = 0;
                 int lines = 0;
 
@@ -94,20 +100,23 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                result.push_back(VJassToken(content.mid(i, j - i), line, column, VJassToken::Comment));
+                int length = j - i;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Comment));
 
                 column += columns;
                 lines += lines;
-                i = j - 1;
+                i += length;
             // operator
-            } else if (currentContent == "/" || currentContent == "+" || currentContent == "-" || currentContent == "*") {
+            } else if (currentContent.startsWith("/") || currentContent.startsWith("+") || currentContent.startsWith("-") || currentContent.startsWith("*")) {
                 result.push_back(VJassToken(currentContent, line, column, VJassToken::Operator));
 
                 column += 1;
                 i += 1;
             // text
+            // TODO match a whole group maybe
             } else if (QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(i))).hasMatch()) {
-                int j = i;
+                int j = i + 1;
 
                 for ( ; j < content.size(); j++) {
                     if (!QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(j))).hasMatch()) {
@@ -115,12 +124,15 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                result.push_back(VJassToken(content.mid(i, j - i), line, column, VJassToken::Text));
+                int length = j - i;
 
-                column += j - i;
-                i = j - 1;
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Text));
+
+
+                column += length;
+                i += length;
             } else {
-                result.push_back(VJassToken(currentContent, line, column, VJassToken::Unknown));
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::Unknown));
 
                 column += 1;
                 i += 1;

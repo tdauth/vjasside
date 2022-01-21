@@ -35,8 +35,41 @@ void MainWindow::saveAs() {
     }
 }
 
-void MainWindow::updateSyntaxErrors(bool autoComplete) {
-    VJassAst ast = this->vjassParser.parse(ui->textEdit->toPlainText());
+void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
+    qDebug() << "Tokens size:" << tokens.size();
+
+    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
+
+    for (const VJassToken &token : tokens) {
+        if (token.isValidKeyword()) {
+            QTextCharFormat fmt;
+            fmt.setForeground(Qt::black);
+            fmt.setFontWeight(QFont::Bold);
+
+            QTextCursor cursor(ui->textEdit->document());
+            cursor.setPosition(token.getColumn(), QTextCursor::MoveAnchor);
+            cursor.setPosition(token.getColumn() + token.getValue().length(), QTextCursor::KeepAnchor);
+            cursor.setCharFormat(fmt);
+
+            qDebug() << "Column:" << token.getColumn() << " token end " << cursor.selectionEnd();
+            qDebug() << "Selection start:" << cursor.selectionStart() << " and selection end " << token.getColumn() + token.getValue().length();
+
+            QTextCharFormat fmtNormal;
+            fmtNormal.setBackground(Qt::white);
+            fmt.setFontWeight(QFont::Normal);
+            cursor.clearSelection();
+            cursor.movePosition(QTextCursor::NextCharacter);
+            cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+            cursor.setCharFormat(fmtNormal);
+        }
+    }
+
+    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
+}
+
+void MainWindow::updateSyntaxErrors(bool autoComplete, bool highlight) {
+    QList<VJassToken> tokens;
+    VJassAst ast = this->vjassParser.parse(ui->textEdit->toPlainText(), tokens);
     QString browserOutput;
     int number = 0;
 
@@ -53,6 +86,11 @@ void MainWindow::updateSyntaxErrors(bool autoComplete) {
         ui->textBrowser->setText(browserOutput);
     } else {
         ui->textBrowser->setText("No syntax errors.");
+    }
+
+    if (highlight) {
+        qDebug() << "Highlight!";
+        highlightTokens(tokens);
     }
 
     if (autoComplete && ast.getCodeCompletionSuggestions().size() > 0) {
@@ -73,11 +111,11 @@ void MainWindow::updateSyntaxErrors(bool autoComplete) {
 }
 
 void MainWindow::updateSyntaxErrorsOnly() {
-    updateSyntaxErrors(false);
+    updateSyntaxErrors(false, true);
 }
 
 void MainWindow::updateSyntaxErrorsWithAutoComplete() {
-    updateSyntaxErrors(true);
+    updateSyntaxErrors(true, true);
 }
 
 void MainWindow::clickPopupItem(const QModelIndex &index) {

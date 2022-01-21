@@ -23,13 +23,16 @@ public:
 public slots:
     void saveAs();
 
-    void updateSyntaxErrors(bool autoComplete);
+    void updateSyntaxErrors(bool autoComplete, bool highlight);
     void updateSyntaxErrorsOnly();
     void updateSyntaxErrorsWithAutoComplete();
 
     void clickPopupItem(const QModelIndex &index);
 
     void aboutDialog();
+
+private slots:
+    void highlightTokens(const QList<VJassToken> &tokens);
 
 private:
     Ui::MainWindow *ui;

@@ -10,11 +10,11 @@ VJassParser::VJassParser()
 {
 }
 
-VJassAst VJassParser::parse(QString content) {
+VJassAst VJassParser::parse(QString content, QList<VJassToken> &tokens) {
     VJassScanner scanner;
 
     VJassAst ast(0, 0);
-    QList<VJassToken> tokens = scanner.scan(content, true);
+    tokens = scanner.scan(content, true);
     bool isInFunction = false;
 
     for (int i = 0; i < tokens.size(); i++) {
@@ -110,7 +110,7 @@ VJassAst VJassParser::parse(QString content) {
                                         i++;
 
                                         if (tokens.size() <= i) {
-                                            vjassFunction->addErrorAtEndOf(tokens.at(i - 1), "Missing returns!");
+                                            vjassFunction->addErrorAtEndOf(tokens.at(i), "Missing returns!");
                                         } else {
                                             const VJassToken &returnsToken = tokens.at(i);
 
@@ -150,6 +150,9 @@ VJassAst VJassParser::parse(QString content) {
             } else {
                 ast.addError(token, "Unexpected symbol: " + token.getValue());
             }
+        } else if (token.getType() == VJassToken::Comment) {
+            ast.addComment(token.getValue());
+        } else if (token.getType() == VJassToken::LineBreak) {
         } else if (token.getType() == VJassToken::Unknown) {
             ast.addError(token, "Unknown symbol: " + token.getValue());
         } else if (token.getType() == VJassToken::Text) {
@@ -186,7 +189,7 @@ VJassAst VJassParser::parse(QString content) {
         // until next line
         if (!gotNextLine) {
             for ( ; i < tokens.size(); i++) {
-                 const VJassToken startingToken = tokens.at(i);
+                 const VJassToken &startingToken = tokens.at(i);
 
                  if (startingToken.getType() == VJassToken::LineBreak) {
                      i++;
@@ -217,6 +220,14 @@ VJassAst VJassParser::parse(QString content) {
         VJassKeyword *commentBlockKeyword = new VJassKeyword(0, 0);
         commentBlockKeyword->setKeyword("/*");
         ast.addCodeCompletionSuggestion(commentBlockKeyword);
+
+        VJassKeyword *nativeKeyword = new VJassKeyword(0, 0);
+        nativeKeyword->setKeyword(VJassToken::KEYWORD_NATIVE);
+        ast.addCodeCompletionSuggestion(nativeKeyword);
+
+        VJassKeyword *typeKeyword = new VJassKeyword(0, 0);
+        typeKeyword->setKeyword(VJassToken::KEYWORD_TYPE);
+        ast.addCodeCompletionSuggestion(typeKeyword);
     }
 
     return ast;

@@ -14,6 +14,8 @@ public:
     const static QString KEYWORD_ENDFUNCTION;
     const static QString KEYWORD_GLOBALS;
     const static QString KEYWORD_CONSTANT;
+    const static QString KEYWORD_TYPE;
+    const static QString KEYWORD_NATIVE;
     const static QStringList KEYWRODS_ALL;
 
     enum Type {
@@ -40,6 +42,7 @@ public:
 
     bool isValidType() const;
     bool isValidIdentifier() const;
+    bool isValidKeyword() const;
 
     static VJassToken::Type typeFromKeyword(const QString &keyword);
 
