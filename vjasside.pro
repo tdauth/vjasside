@@ -11,27 +11,35 @@ CONFIG += no_testcase_installs
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    autocompletionpopup.cpp \
     main.cpp \
     mainwindow.cpp \
     testparser.cpp \
+    testscanner.cpp \
     vjassast.cpp \
     vjassfunction.cpp \
     vjassfunctionparameter.cpp \
     vjasskeyword.cpp \
     vjassparseerror.cpp \
     vjassparser.cpp \
-    vjassparseresult.cpp
+    vjassparseresult.cpp \
+    vjassscanner.cpp \
+    vjasstoken.cpp
 
 HEADERS += \
+    autocompletionpopup.h \
     mainwindow.h \
     testparser.h \
+    testscanner.h \
     vjassast.h \
     vjassfunction.h \
     vjassfunctionparameter.h \
     vjasskeyword.h \
     vjassparseerror.h \
     vjassparser.h \
-    vjassparseresult.h
+    vjassparseresult.h \
+    vjassscanner.h \
+    vjasstoken.h
 
 FORMS += \
     mainwindow.ui

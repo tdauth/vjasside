@@ -4,6 +4,7 @@
 #include <QList>
 
 #include "vjassparseerror.h"
+#include "vjasstoken.h"
 
 class VJassAst
 {
@@ -19,6 +20,8 @@ public:
     int getColumn();
 
     void addError(int line, int column, const QString &error);
+    void addError(const VJassToken &token, const QString &error);
+    void addErrorAtEndOf(const VJassToken &token, const QString &error);
     void addChild(VJassAst *child);
     void addCodeCompletionSuggestion(VJassAst *codeCompletionSuggestion);
 

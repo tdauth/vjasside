@@ -7,17 +7,18 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , popup(new QTreeWidget)
+    , popup(new AutoCompletionPopup)
 {
     ui->setupUi(this);
 
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrors);
-    connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::updateSyntaxErrors);
+    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
+    connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::updateSyntaxErrorsWithAutoComplete);
+    connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
-    updateSyntaxErrors();
+    updateSyntaxErrorsOnly();
 }
 
 MainWindow::~MainWindow()
@@ -34,7 +35,7 @@ void MainWindow::saveAs() {
     }
 }
 
-void MainWindow::updateSyntaxErrors() {
+void MainWindow::updateSyntaxErrors(bool autoComplete) {
     VJassAst ast = this->vjassParser.parse(ui->textEdit->toPlainText());
     QString browserOutput;
     int number = 0;
@@ -44,7 +45,7 @@ void MainWindow::updateSyntaxErrors() {
             browserOutput += "\n";
         }
 
-        browserOutput += tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine()).arg(parseError.getColumn()).arg(parseError.getError());
+        browserOutput += tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError());
         number++;
     }
 
@@ -54,35 +55,42 @@ void MainWindow::updateSyntaxErrors() {
         ui->textBrowser->setText("No syntax errors.");
     }
 
-    if (ast.getCodeCompletionSuggestions().size() > 0) {
+    if (autoComplete && ast.getCodeCompletionSuggestions().size() > 0) {
         popup->clear();
-        popup->headerItem()->setText(0, tr("Auto Completion"));
-        popup->setMinimumSize(QSize(128, 128));
-        popup->setWindowFlags(Qt::Popup);
-        popup->setFocusPolicy(Qt::NoFocus);
         popup->setFocusProxy(this);
 
         for (VJassAst *codeCompletionSuggestion : ast.getCodeCompletionSuggestions()) {
             new QTreeWidgetItem(popup, QStringList(codeCompletionSuggestion->toString()));
         }
 
-        new QTreeWidgetItem(popup, QStringList(tr("Cancel")));
+        qDebug() << "Bottom right 1:" << ui->textEdit, ui->textEdit->cursorRect().bottomRight();
+        qDebug() << "Bottom right 2:" << ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight());
 
-        popup->move(ui->textEdit->cursor().pos());
-
-        // TODO set at the end of the cursor
+        popup->move(ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight()));
 
         popup->show();
     }
+}
+
+void MainWindow::updateSyntaxErrorsOnly() {
+    updateSyntaxErrors(false);
+}
+
+void MainWindow::updateSyntaxErrorsWithAutoComplete() {
+    updateSyntaxErrors(true);
 }
 
 void MainWindow::clickPopupItem(const QModelIndex &index) {
     if (index.row() == popup->topLevelItemCount() - 1) {
         popup->close();
     } else {
+        // TODO backtrack and check if the start of the data is already there and only append missing stuff
         ui->textEdit->insertPlainText(index.data().toString());
     }
 
     popup->close();
 }
 
+void MainWindow::aboutDialog() {
+    // TODO Show about dialog
+}

@@ -118,8 +118,15 @@
     </property>
     <addaction name="actionComplete"/>
    </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>About</string>
+    </property>
+    <addaction name="actionBaradesVJassIDE"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuAuto_Completion"/>
+   <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionQuit">
@@ -138,6 +145,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Space</string>
+   </property>
+  </action>
+  <action name="actionBaradesVJassIDE">
+   <property name="text">
+    <string>Baradé's vJass IDE</string>
    </property>
   </action>
  </widget>

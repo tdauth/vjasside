@@ -72,6 +72,15 @@ void VJassAst::addError(int line, int column, const QString &error) {
     this->errors.push_back(VJassParseError(line, column, error));
 }
 
+void VJassAst::addError(const VJassToken &token, const QString &error) {
+    this->errors.push_back(VJassParseError(token.getLine(), token.getColumn(), error));
+}
+
+void VJassAst::addErrorAtEndOf(const VJassToken &token, const QString &error) {
+    this->errors.push_back(VJassParseError(token.getLine(), token.getColumn() + token.getValue().length(), error));
+}
+
+
 void VJassAst::addChild(VJassAst *child) {
     this->children.push_back(child);
 }

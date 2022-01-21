@@ -6,6 +6,7 @@
 #include <QModelIndex>
 
 #include "vjassparser.h"
+#include "autocompletionpopup.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,15 +23,19 @@ public:
 public slots:
     void saveAs();
 
-    void updateSyntaxErrors();
+    void updateSyntaxErrors(bool autoComplete);
+    void updateSyntaxErrorsOnly();
+    void updateSyntaxErrorsWithAutoComplete();
 
     void clickPopupItem(const QModelIndex &index);
+
+    void aboutDialog();
 
 private:
     Ui::MainWindow *ui;
 
     VJassParser vjassParser;
 
-    QTreeWidget *popup;
+    AutoCompletionPopup *popup;
 };
 #endif // MAINWINDOW_H
