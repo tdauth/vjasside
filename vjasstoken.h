@@ -34,6 +34,7 @@ public:
         EndglobalsKeyword,
         Comment,
         Operator,
+        BooleanLiteral,
         LineBreak,
         WhiteSpace,
         Separator,

@@ -56,6 +56,7 @@ void MainWindow::saveAs() {
 void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
     qDebug() << "Tokens size:" << tokens.size();
 
+    // make sure no slots are triggered by this to prevent endless recursions
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
 
     QTextCharFormat fmtNormal;
@@ -69,47 +70,62 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
     int column = 0;
 
     for (const VJassToken &token : tokens) {
-        // move to token
-        int lines = token.getLine() - line;
+        // only hightlight certain tokens at all
+        if (token.getType() != VJassToken::WhiteSpace && token.getType() != VJassToken::LineBreak) {
+            // move to token
+            int lines = token.getLine() - line;
+            int columns = 0;
 
-        if (lines > 0) {
-            column = 0;
+            if (lines > 0) {
+                column = 0;
+                cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::KeepAnchor);
+                cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lines);
+                //qDebug() << "Moving to the start of the line";
+                //qDebug() << "Moving down" << lines << "lines.";
+            } else {
+                columns = token.getColumn() - column;
+                cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, columns);
+                //qDebug() << "Moving to the right" << column << "columns.";
+            }
+
+            //qDebug() << "After moving selection to token to format normal, selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+            if (lines > 0 || columns > 0) {
+                // format normal until here since it might be some space without any tokens
+                cursor.setCharFormat(fmtNormal);
+                cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
+            }
+
+            //qDebug() << "After moving selection to token, selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+
+            // specify the format for the token itself
+            QTextCharFormat fmt;
+
+            if (token.isValidKeyword() || token.getType() == VJassToken::BooleanLiteral) {
+                fmt.setForeground(Qt::black);
+                fmt.setFontWeight(QFont::Bold);
+            } else if (token.getType() == VJassToken::Comment) {
+                fmt.setForeground(Qt::gray);
+                fmt.setFontItalic(true);
+            } else {
+                fmt = fmtNormal;
+            }
+
+            //qDebug() << "Before selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+
+            // move to the token's end but keep the selection and format it
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, token.getValue().length());
+            cursor.setCharFormat(fmt);
+            // move anchor to the end
+            cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
+
+            //qDebug() << "Token line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
+            //qDebug() << "After selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+
+            // TODO set properly if the token contains line breaks
+            // update current line and column
+            line = token.getLine();
+            column = token.getColumn() + token.getValue().length();
         }
-
-        cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lines);
-        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, token.getColumn() - column);
-        // format normal until here
-        cursor.setCharFormat(fmtNormal);
-        cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
-
-        // specify the format for the token itself
-        QTextCharFormat fmt;
-
-        if (token.isValidKeyword()) {
-            fmt.setForeground(Qt::black);
-            fmt.setFontWeight(QFont::Bold);
-        } else if (token.getType() == VJassToken::Comment) {
-            fmt.setForeground(Qt::gray);
-            fmt.setFontItalic(true);
-        } else {
-            fmt = fmtNormal;
-        }
-
-        //qDebug() << "Before selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-        // move to the token's end but keep the selection and format it
-        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, token.getValue().length());
-        cursor.setCharFormat(fmt);
-        // move anchor to the end
-        cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
-
-        //qDebug() << "Token line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
-        //qDebug() << "After selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-        // TODO set properly if the token contains line breaks
-        // update current line and column
-        line = token.getLine();
-        column = token.getColumn() + token.getValue().length();
     }
 
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);

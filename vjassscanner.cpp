@@ -115,11 +115,23 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 lines += lines;
                 i += length;
             // operator
-            } else if (currentContent.startsWith("/") || currentContent.startsWith("+") || currentContent.startsWith("-") || currentContent.startsWith("*")) {
-                result.push_back(VJassToken(currentContent, line, column, VJassToken::Operator));
+            } else if (currentContent.startsWith("/") || currentContent.startsWith("+") || currentContent.startsWith("-") || currentContent.startsWith("*") || currentContent.startsWith("=")) {
+                result.push_back(VJassToken(currentContent.mid(i, 1), line, column, VJassToken::Operator));
 
                 column += 1;
                 i += 1;
+            // boolean literal true
+            } else if (currentContent.startsWith("true")) {
+                result.push_back(VJassToken(currentContent.mid(i, 4), line, column, VJassToken::BooleanLiteral));
+
+                column += 4;
+                i += 4;
+            // boolean literal false
+            } else if (currentContent.startsWith("false")) {
+                result.push_back(VJassToken(currentContent.mid(i, 5), line, column, VJassToken::BooleanLiteral));
+
+                column += 5;
+                i += 5;
             // text
             // TODO match a whole group maybe
             } else if (QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(i))).hasMatch()) {

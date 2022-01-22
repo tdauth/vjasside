@@ -173,6 +173,9 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
                     ast.addCodeCompletionSuggestion(endfunctionKeyword);
                 }
             }
+        // all keywords not handled at this point should be invalid here
+        } else if (token.isValidKeyword()) {
+            ast.addError(token, "Unexpected keyword: " + token.getValue());
         }
 
         // add comments

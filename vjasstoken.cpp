@@ -66,7 +66,18 @@ bool VJassToken::isValidIdentifier() const {
 }
 
 bool VJassToken::isValidKeyword() const {
-    return KEYWRODS_ALL.contains(getValue());
+    return getType() == VJassToken::EndfunctionKeyword
+        || getType() == VJassToken::FunctionKeyword
+        || getType() == VJassToken::TakesKeyword
+        || getType() == VJassToken::NothingKeyword
+        || getType() == VJassToken::ReturnsKeyword
+        || getType() == VJassToken::ConstantKeyword
+        || getType() == VJassToken::TypeKeyword
+        || getType() == VJassToken::ExtendsKeyword
+        || getType() == VJassToken::NativeKeyword
+        || getType() == VJassToken::GlobalsKeyword
+        || getType() == VJassToken::EndglobalsKeyword
+    ;
 }
 
 VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
