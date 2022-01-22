@@ -18,6 +18,7 @@ public:
     const static QString KEYWORD_TYPE;
     const static QString KEYWORD_EXTENDS;
     const static QString KEYWORD_NATIVE;
+    const static QString KEYWORD_NULL;
     const static QStringList KEYWRODS_ALL;
 
     enum Type {
@@ -32,9 +33,13 @@ public:
         NativeKeyword,
         GlobalsKeyword,
         EndglobalsKeyword,
+        NullKeyword,
         Comment,
         Operator,
         BooleanLiteral,
+        IntegerLiteral,
+        RealLiteral,
+        RawCodeLiteral,
         LineBreak,
         WhiteSpace,
         Separator,

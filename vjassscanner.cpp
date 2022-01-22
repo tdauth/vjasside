@@ -49,7 +49,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                int length = j - i;
+                const int length = j - i;
                 //qDebug() << "Whitespaces with length " << length;
 
                 if (!dropWhiteSpaces) {
@@ -79,7 +79,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                int length = j - i;
+                const int length = j - i;
 
                 //qDebug() << "Line comment with length" << length;
 
@@ -107,7 +107,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                int length = j - i;
+                const int length = j - i;
 
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Comment));
 
@@ -132,6 +132,61 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 column += 5;
                 i += 5;
+            // real literal
+            } else if (currentContent.startsWith(".")) {
+                int j = i + 1;
+
+                for ( ; j < content.size(); j++) {
+                    if (!QRegularExpression("[0-9]{1}").match(QString(content.at(j))).hasMatch()) {
+                        break;
+                    }
+                }
+
+                const int length = j - i;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::RealLiteral));
+
+                column += length;
+                i += length;
+            // integer literal
+            } else if (QRegularExpression("[0-9]{1}").match(QString(content.at(i))).hasMatch()) {
+                int j = i + 1;
+                int numberOfDots = 0;
+
+                for ( ; j < content.size() && numberOfDots <= 1; j++) {
+                    if (content.at(j) == '.') {
+                        numberOfDots++;
+                    } else if (!QRegularExpression("[0-9]{1}").match(QString(content.at(j))).hasMatch()) {
+                        break;
+                    }
+                }
+
+                const int length = j - i;
+
+                if (numberOfDots == 0) {
+                    result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::IntegerLiteral));
+                } else {
+                    result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::RealLiteral));
+                }
+
+                column += length;
+                i += length;
+            // rawcode literal
+            } else if (currentContent.startsWith("'")) {
+                int j = i + 1;
+
+                for ( ; j < content.size(); j++) {
+                    if (!QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(j))).hasMatch() || content.at(j) == '\'') {
+                        break;
+                    }
+                }
+
+                const int length = j - i;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::RawCodeLiteral));
+
+                column += length;
+                i += length;
             // text
             // TODO match a whole group maybe
             } else if (QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(i))).hasMatch()) {
@@ -143,7 +198,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                int length = j - i;
+                const int length = j - i;
 
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Text));
 

@@ -100,12 +100,16 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
             // specify the format for the token itself
             QTextCharFormat fmt;
 
-            if (token.isValidKeyword() || token.getType() == VJassToken::BooleanLiteral) {
+            if (token.isValidKeyword()) {
                 fmt.setForeground(Qt::black);
                 fmt.setFontWeight(QFont::Bold);
             } else if (token.getType() == VJassToken::Comment) {
                 fmt.setForeground(Qt::gray);
                 fmt.setFontItalic(true);
+            } else if (token.getType() == VJassToken::BooleanLiteral) {
+                fmt.setForeground(Qt::blue);
+            } else if (token.getType() == VJassToken::RawCodeLiteral || token.getType() == VJassToken::IntegerLiteral || token.getType() == VJassToken::RealLiteral) {
+                fmt.setForeground(Qt::darkYellow);
             } else {
                 fmt = fmtNormal;
             }
