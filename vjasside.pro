@@ -24,7 +24,8 @@ SOURCES += \
     vjassparser.cpp \
     vjassparseresult.cpp \
     vjassscanner.cpp \
-    vjasstoken.cpp
+    vjasstoken.cpp \
+    vjasstype.cpp
 
 HEADERS += \
     autocompletionpopup.h \
@@ -39,7 +40,8 @@ HEADERS += \
     vjassparser.h \
     vjassparseresult.h \
     vjassscanner.h \
-    vjasstoken.h
+    vjasstoken.h \
+    vjasstype.h
 
 FORMS += \
     mainwindow.ui

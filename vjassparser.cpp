@@ -5,6 +5,7 @@
 #include "vjassast.h"
 #include "vjassfunction.h"
 #include "vjasskeyword.h"
+#include "vjasstype.h"
 
 VJassParser::VJassParser()
 {
@@ -18,8 +19,64 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
         const VJassToken &token = tokens.at(i);
         bool gotNextLine = false;
 
+        // type
+        if (token.getType() == VJassToken::TypeKeyword) {
+            VJassType *vjassType = new VJassType(token.getLine(), token.getColumn());
+
+            if (isInFunction) {
+                vjassType->addError(token, "Cannot declare a type inside of a function.");
+                // TODO add code completion suggestion to remove the token
+            }
+
+            i++;
+
+            if (i == tokens.size()) {
+                vjassType->addErrorAtEndOf(token, "Missing type name.");
+                // TODO add code completion suggestion to add a type name
+            } else {
+                const VJassToken &typeName = tokens.at(i);
+
+                if (typeName.isValidIdentifier()) {
+                    i++;
+
+                    if (i == tokens.size()) {
+                        vjassType->addErrorAtEndOf(typeName, "Missing keyword extends for type identifier (only type handle is declared implicitely): " + typeName.getValue());
+                        VJassKeyword *extendsKeyword = new VJassKeyword(typeName.getLine(), typeName.getColumn());
+                        extendsKeyword->setKeyword(VJassToken::KEYWORD_EXTENDS);
+                        ast.addCodeCompletionSuggestion(extendsKeyword);
+                    } else {
+                        const VJassToken &extendsKeyword = tokens.at(i);
+
+                        if (extendsKeyword.getType() != VJassToken::ExtendsKeyword) {
+                            vjassType->addError(extendsKeyword, "Expected extends keyword instead of: " + typeName.getValue());
+                            // TODO add code completion suggestion replace extendsToken with extends
+                        } else {
+                            i++;
+
+                            if (i == tokens.size()) {
+                                vjassType->addErrorAtEndOf(extendsKeyword, "Missing parent type for type " + typeName.getValue());
+                                // TODO add code completion suggestion to add a type name
+                            } else {
+                                const VJassToken &parentType = tokens.at(i);
+
+                                if (!parentType.isValidIdentifier()) {
+                                    vjassType->addError(parentType, "Invalid parent type identifier " + parentType.getValue());
+                                }
+
+                                i++;
+                            }
+                        }
+                    }
+
+                } else {
+                    vjassType->addError(typeName, "Invalid type identifier: " + typeName.getValue());
+                    // TODO add code completion suggestion replace typeName with valid identifier
+                }
+            }
+
+            ast.addChild(vjassType);
         // function
-        if (token.getType() == VJassToken::FunctionKeyword) {
+        } else if (token.getType() == VJassToken::FunctionKeyword) {
             VJassFunction *vjassFunction = new VJassFunction(token.getLine(), token.getColumn());
 
             // TODO Depends on where it is done

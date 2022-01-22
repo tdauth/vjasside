@@ -2,6 +2,7 @@
 #define VJASSAST_H
 
 #include <QList>
+#include <QString>
 
 #include "vjassparseerror.h"
 #include "vjasstoken.h"
