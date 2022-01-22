@@ -11,8 +11,32 @@ VJassParser::VJassParser()
 {
 }
 
-VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tokens) {
-    VJassAst ast(0, 0);
+inline void suggestLineStartKeywords(bool isInFunction, const VJassToken &token, VJassAst &ast) {
+    QList<QString> keywords;
+
+    if (!isInFunction) {
+        keywords.push_back(VJassToken::KEYWORD_FUNCTION);
+        keywords.push_back(VJassToken::KEYWORD_GLOBALS);
+        keywords.push_back(VJassToken::KEYWORD_CONSTANT);
+        keywords.push_back("//");
+        keywords.push_back("/*");
+        keywords.push_back(VJassToken::KEYWORD_NATIVE);
+        keywords.push_back(VJassToken::KEYWORD_TYPE);
+    } else {
+        keywords.push_back(VJassToken::KEYWORD_ENDFUNCTION);
+    }
+
+    for (const QString &keyword : keywords) {
+        if (keyword.startsWith(token.getValue())) {
+            VJassKeyword *functionKeyword = new VJassKeyword(token.getLine(), token.getColumn() + token.getValue().size());
+            functionKeyword->setKeyword(keyword);
+            ast.addCodeCompletionSuggestion(functionKeyword);
+        }
+    }
+}
+
+VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
+    VJassAst *ast = new VJassAst(0, 0);
     bool isInFunction = false;
 
     for (int i = 0; i < tokens.size(); i++) {
@@ -43,7 +67,7 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
                         vjassType->addErrorAtEndOf(typeName, "Missing keyword extends for type identifier (only type handle is declared implicitely): " + typeName.getValue());
                         VJassKeyword *extendsKeyword = new VJassKeyword(typeName.getLine(), typeName.getColumn());
                         extendsKeyword->setKeyword(VJassToken::KEYWORD_EXTENDS);
-                        ast.addCodeCompletionSuggestion(extendsKeyword);
+                        ast->addCodeCompletionSuggestion(extendsKeyword);
                     } else {
                         const VJassToken &extendsKeyword = tokens.at(i);
 
@@ -74,7 +98,7 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
                 }
             }
 
-            ast.addChild(vjassType);
+            ast->addChild(vjassType);
         // function
         } else if (token.getType() == VJassToken::FunctionKeyword) {
             VJassFunction *vjassFunction = new VJassFunction(token.getLine(), token.getColumn());
@@ -100,7 +124,7 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
                         vjassFunction->addError(identifier, "Missing takes keyword.");
                         VJassKeyword *takesKeyword = new VJassKeyword(identifier.getLine(), identifier.getColumn());
                         takesKeyword->setKeyword(VJassToken::KEYWORD_TAKES);
-                        ast.addCodeCompletionSuggestion(takesKeyword);
+                        ast->addCodeCompletionSuggestion(takesKeyword);
                     } else {
                         const VJassToken &takesKeyword = tokens.at(i);
                         i++;
@@ -123,6 +147,9 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
                                         if  (parameterType.getType() == VJassToken::NothingKeyword) {
                                             if (parameterCounter > 0) {
                                                 vjassFunction->addErrorAtEndOf(parameterType, "Unexpected nothing keyword");
+                                                gotError = true;
+                                            } else {
+                                                expectMoreParameters = false;
                                             }
 
                                             break;
@@ -204,41 +231,29 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
                 }
             }
 
-            ast.addChild(vjassFunction);
+            ast->addChild(vjassFunction);
         } else if (token.getType() == VJassToken::EndfunctionKeyword) {
             if (isInFunction) {
                 isInFunction = false;
             } else {
-                ast.addError(token, "Expected after defining a function before using: " + token.getValue());
+                ast->addError(token, "Expected after defining a function before using: " + token.getValue());
             }
         } else if (token.getType() == VJassToken::Comment) {
-            ast.addComment(token.getValue());
+            ast->addComment(token.getValue());
         } else if (token.getType() == VJassToken::LineBreak) {
         } else if (token.getType() == VJassToken::Unknown) {
-            ast.addError(token, "Unknown symbol: " + token.getValue());
+            ast->addError(token, "Unknown symbol: " + token.getValue());
         } else if (token.getType() == VJassToken::Text) {
-            if (!isInFunction) {
-                if (VJassToken::KEYWORD_FUNCTION.startsWith(token.getValue())) {
-                    VJassKeyword *functionKeyword = new VJassKeyword(token.getLine(), token.getColumn() + token.getValue().size());
-                    functionKeyword->setKeyword(VJassToken::KEYWORD_FUNCTION);
-                    ast.addCodeCompletionSuggestion(functionKeyword);
-                }
-            } else {
-                if (VJassToken::KEYWORD_ENDFUNCTION.startsWith(token.getValue())) {
-                    VJassKeyword *endfunctionKeyword = new VJassKeyword(token.getLine(), token.getColumn() + token.getValue().size());
-                    endfunctionKeyword->setKeyword(VJassToken::KEYWORD_ENDFUNCTION);
-                    ast.addCodeCompletionSuggestion(endfunctionKeyword);
-                }
-            }
+            suggestLineStartKeywords(isInFunction, token, *ast);
         // all keywords not handled at this point should be invalid here
         } else if (token.isValidKeyword()) {
-            ast.addError(token, "Unexpected keyword: " + token.getValue());
+            ast->addError(token, "Unexpected keyword: " + token.getValue());
         }
 
         // add comments
         if (tokens.size() > i) {
             const VJassToken &startingToken = tokens.at(i);
-            VJassAst *child = ast.getChildren().isEmpty() ? &ast : ast.getChildren().last();
+            VJassAst *child = ast->getChildren().isEmpty() ? ast : ast->getChildren().last();
 
             if (startingToken.getType() != VJassToken::Comment && startingToken.getType() != VJassToken::LineBreak) {
                 child->addError(startingToken, "Expected comment instead of " + startingToken.getValue());
@@ -265,33 +280,37 @@ VJassAst VJassParser::parse(const QString &content, const QList<VJassToken> &tok
     }
 
     if (tokens.isEmpty()) {
-        VJassKeyword *functionKeyword = new VJassKeyword(0, 0);
-        functionKeyword->setKeyword(VJassToken::KEYWORD_FUNCTION);
-        ast.addCodeCompletionSuggestion(functionKeyword);
+        if (!isInFunction) {
+            VJassKeyword *functionKeyword = new VJassKeyword(0, 0);
+            functionKeyword->setKeyword(VJassToken::KEYWORD_FUNCTION);
+            ast->addCodeCompletionSuggestion(functionKeyword);
 
-        VJassKeyword *globalsKeyword = new VJassKeyword(0, 0);
-        globalsKeyword->setKeyword(VJassToken::KEYWORD_GLOBALS);
-        ast.addCodeCompletionSuggestion(globalsKeyword);
+            VJassKeyword *globalsKeyword = new VJassKeyword(0, 0);
+            globalsKeyword->setKeyword(VJassToken::KEYWORD_GLOBALS);
+            ast->addCodeCompletionSuggestion(globalsKeyword);
 
-        VJassKeyword *constantKeyword = new VJassKeyword(0, 0);
-        constantKeyword->setKeyword(VJassToken::KEYWORD_CONSTANT);
-        ast.addCodeCompletionSuggestion(constantKeyword);
+            VJassKeyword *constantKeyword = new VJassKeyword(0, 0);
+            constantKeyword->setKeyword(VJassToken::KEYWORD_CONSTANT);
+            ast->addCodeCompletionSuggestion(constantKeyword);
+        }
 
         VJassKeyword *commentLineKeyword = new VJassKeyword(0, 0);
         commentLineKeyword->setKeyword("//");
-        ast.addCodeCompletionSuggestion(commentLineKeyword);
+        ast->addCodeCompletionSuggestion(commentLineKeyword);
 
         VJassKeyword *commentBlockKeyword = new VJassKeyword(0, 0);
         commentBlockKeyword->setKeyword("/*");
-        ast.addCodeCompletionSuggestion(commentBlockKeyword);
+        ast->addCodeCompletionSuggestion(commentBlockKeyword);
 
-        VJassKeyword *nativeKeyword = new VJassKeyword(0, 0);
-        nativeKeyword->setKeyword(VJassToken::KEYWORD_NATIVE);
-        ast.addCodeCompletionSuggestion(nativeKeyword);
+        if (!isInFunction) {
+            VJassKeyword *nativeKeyword = new VJassKeyword(0, 0);
+            nativeKeyword->setKeyword(VJassToken::KEYWORD_NATIVE);
+            ast->addCodeCompletionSuggestion(nativeKeyword);
 
-        VJassKeyword *typeKeyword = new VJassKeyword(0, 0);
-        typeKeyword->setKeyword(VJassToken::KEYWORD_TYPE);
-        ast.addCodeCompletionSuggestion(typeKeyword);
+            VJassKeyword *typeKeyword = new VJassKeyword(0, 0);
+            typeKeyword->setKeyword(VJassToken::KEYWORD_TYPE);
+            ast->addCodeCompletionSuggestion(typeKeyword);
+        }
     }
 
     return ast;

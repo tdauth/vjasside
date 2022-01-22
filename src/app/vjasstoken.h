@@ -21,6 +21,11 @@ public:
     const static QString KEYWORD_NULL;
     const static QStringList KEYWRODS_ALL;
 
+    // keep Warcraft III's default stuff in memory to improve the performance on highlighting
+    const static QSet<QString> COMMONJ_TYPES_ALL;
+    const static QSet<QString> COMMONJ_NATIVES_ALL;
+    const static QSet<QString> COMMONJ_CONSTANTS_ALL;
+
     enum Type {
         FunctionKeyword,
         TakesKeyword,
@@ -60,11 +65,22 @@ public:
 
     static VJassToken::Type typeFromKeyword(const QString &keyword);
 
+    int getValueLength() const;
+    bool isCommonJType() const;
+    bool isCommonJNative() const;
+    bool isCommonJConstant() const;
+
 private:
     QString value;
     int line;
     int column;
     Type type;
+
+    // cached stuff for faster access
+    int valueLengthCached;
+    bool isCommonJTypeCached;
+    bool isCommonJNativeCached;
+    bool isCommonJConstantCached;
 };
 
 #endif // VJASSTOKEN_H

@@ -7,11 +7,14 @@
 class VJassParseError
 {
 public:
+    VJassParseError();
     VJassParseError(int line, int column, const QString &error);
+    VJassParseError(const VJassParseError &other);
+    VJassParseError& operator=(const VJassParseError &other);
 
-    int getLine();
-    int getColumn();
-    const QString& getError();
+    int getLine() const;
+    int getColumn() const;
+    const QString& getError() const;
 
 private:
     int line;

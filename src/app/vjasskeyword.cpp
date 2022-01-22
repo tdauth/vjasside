@@ -13,6 +13,6 @@ const QString& VJassKeyword::getKeyword() const {
     return keyword;
 }
 
-QString VJassKeyword::toString() {
+QString VJassKeyword::toString() const {
     return getKeyword();
 }

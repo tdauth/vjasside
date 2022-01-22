@@ -11,7 +11,7 @@ public:
     void setKeyword(const QString &keyword);
     const QString& getKeyword() const;
 
-    QString toString() override;
+    QString toString() const override;
 
 private:
     QString keyword;

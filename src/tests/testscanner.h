@@ -9,6 +9,7 @@ class TestScanner : public QObject
 
     private slots:
         void canScanFunction();
+        void canScanCommonJ();
 };
 
 #endif // TESTSCANNER_H
