@@ -64,6 +64,7 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
     fmtNormal.setFontWeight(QFont::Normal);
 
     QTextCursor cursor(ui->textEdit->document());
+    // start at the beginning of the document
     cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
 
     int line = 0;
@@ -77,9 +78,11 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
             int columns = 0;
 
             if (lines > 0) {
-                column = 0;
                 cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::KeepAnchor);
                 cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lines);
+                column = token.getColumn();
+                columns = token.getColumn();
+                cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, columns);
                 //qDebug() << "Moving to the start of the line";
                 //qDebug() << "Moving down" << lines << "lines.";
             } else {
@@ -122,7 +125,7 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
             // move anchor to the end
             cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
 
-            //qDebug() << "Token line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
+            //qDebug() << "Token:" << token.getValue() << "with line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
             //qDebug() << "After selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
 
             // TODO set properly if the token contains line breaks
