@@ -7,14 +7,16 @@
 class VJassToken
 {
 public:
+    const static QString KEYWORD_ENDFUNCTION; // define before function to match first
     const static QString KEYWORD_FUNCTION;
     const static QString KEYWORD_TAKES;
     const static QString KEYWORD_NOTHING;
     const static QString KEYWORD_RETURNS;
-    const static QString KEYWORD_ENDFUNCTION;
     const static QString KEYWORD_GLOBALS;
+    const static QString KEYWORD_ENDGLOBALS;
     const static QString KEYWORD_CONSTANT;
     const static QString KEYWORD_TYPE;
+    const static QString KEYWORD_EXTENDS;
     const static QString KEYWORD_NATIVE;
     const static QStringList KEYWRODS_ALL;
 
@@ -24,6 +26,12 @@ public:
         NothingKeyword,
         ReturnsKeyword,
         EndfunctionKeyword,
+        ConstantKeyword,
+        TypeKeyword,
+        ExtendsKeyword,
+        NativeKeyword,
+        GlobalsKeyword,
+        EndglobalsKeyword,
         Comment,
         Operator,
         LineBreak,

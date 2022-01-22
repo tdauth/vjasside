@@ -10,6 +10,8 @@ public:
 
 protected:
     virtual void keyPressEvent(QKeyEvent *event) override;
+    virtual void mousePressEvent(QMouseEvent *event) override;
+    virtual void focusOutEvent(QFocusEvent *event) override;
 };
 
 #endif // AUTOCOMPLETIONPOPUP_H

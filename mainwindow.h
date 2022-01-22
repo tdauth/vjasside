@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QTreeWidget>
 #include <QModelIndex>
+#include <QListWidgetItem>
 
 #include "vjassparser.h"
 #include "autocompletionpopup.h"
@@ -21,9 +22,11 @@ public:
     ~MainWindow();
 
 public slots:
+    void newFile();
+    void openFile();
     void saveAs();
 
-    void updateSyntaxErrors(bool autoComplete, bool highlight);
+    void updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight);
     void updateSyntaxErrorsOnly();
     void updateSyntaxErrorsWithAutoComplete();
 
@@ -33,6 +36,7 @@ public slots:
 
 private slots:
     void highlightTokens(const QList<VJassToken> &tokens);
+    void outputListItemDoubleClicked(QListWidgetItem *item);
 
 private:
     Ui::MainWindow *ui;

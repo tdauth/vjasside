@@ -1,26 +1,32 @@
+#include <exception>
+
 #include <QtCore>
 
 #include "vjasstoken.h"
 
+const QString VJassToken::KEYWORD_ENDFUNCTION = "endfunction";
 const QString VJassToken::KEYWORD_FUNCTION = "function";
 const QString VJassToken::KEYWORD_TAKES = "takes";
 const QString VJassToken::KEYWORD_NOTHING = "nothing";
 const QString VJassToken::KEYWORD_RETURNS = "returns";
-const QString VJassToken::KEYWORD_ENDFUNCTION = "endfunction";
 const QString VJassToken::KEYWORD_GLOBALS = "globals";
+const QString VJassToken::KEYWORD_ENDGLOBALS = "endglobals";
 const QString VJassToken::KEYWORD_CONSTANT = "constant";
 const QString VJassToken::KEYWORD_TYPE = "type";
+const QString VJassToken::KEYWORD_EXTENDS = "extends";
 const QString VJassToken::KEYWORD_NATIVE = "native";
 
 const QStringList VJassToken::KEYWRODS_ALL = {
+    VJassToken::KEYWORD_ENDFUNCTION, // match before function
     VJassToken::KEYWORD_FUNCTION,
     VJassToken::KEYWORD_TAKES,
     VJassToken::KEYWORD_NOTHING,
     VJassToken::KEYWORD_RETURNS,
-    VJassToken::KEYWORD_ENDFUNCTION,
     VJassToken::KEYWORD_GLOBALS,
+    VJassToken::KEYWORD_ENDGLOBALS,
     VJassToken::KEYWORD_CONSTANT,
     VJassToken::KEYWORD_TYPE,
+    VJassToken::KEYWORD_EXTENDS,
     VJassToken::KEYWORD_NATIVE
 };
 
@@ -64,7 +70,9 @@ bool VJassToken::isValidKeyword() const {
 }
 
 VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
-    if (keyword == KEYWORD_FUNCTION) {
+    if (keyword == KEYWORD_ENDFUNCTION) {
+        return VJassToken::EndfunctionKeyword;
+    } else if (keyword == KEYWORD_FUNCTION) {
         return VJassToken::FunctionKeyword;
     } else if (keyword == KEYWORD_TAKES) {
         return VJassToken::TakesKeyword;
@@ -72,7 +80,19 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::NothingKeyword;
     } else if (keyword == KEYWORD_RETURNS) {
         return VJassToken::ReturnsKeyword;
+    } else if (keyword == KEYWORD_CONSTANT) {
+        return VJassToken::ConstantKeyword;
+    } else if (keyword == KEYWORD_TYPE) {
+        return VJassToken::TypeKeyword;
+    } else if (keyword == KEYWORD_EXTENDS) {
+        return VJassToken::ExtendsKeyword;
+    } else if (keyword == KEYWORD_NATIVE) {
+        return VJassToken::NativeKeyword;
+    } else if (keyword == KEYWORD_GLOBALS) {
+        return VJassToken::GlobalsKeyword;
+    } else if (keyword == KEYWORD_ENDGLOBALS) {
+        return VJassToken::EndglobalsKeyword;
     }
 
-    return VJassToken::FunctionKeyword;
+    Q_ASSERT(false);
 }

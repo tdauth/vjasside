@@ -11,7 +11,7 @@ class VJassParser
 public:
     VJassParser();
 
-    VJassAst parse(QString content,  QList<VJassToken> &tokens);
+    VJassAst parse(const QString &content,  const QList<VJassToken> &tokens);
 };
 
 #endif // VJASSPARSER_H

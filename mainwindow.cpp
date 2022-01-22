@@ -3,6 +3,7 @@
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "vjassscanner.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,12 +12,23 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    connect(ui->actionNew, &QAction::triggered, this, &MainWindow::newFile);
+    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile);
+    connect(ui->actionSaveAs, &QAction::triggered, this, &MainWindow::saveAs);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
+
     connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::updateSyntaxErrorsWithAutoComplete);
+
+    connect(ui->actionEnableSyntaxHighlighting, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
+    connect(ui->actionEnableSyntaxCheck, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
+
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
+    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
+
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
+
+    connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outputListItemDoubleClicked);
 
     updateSyntaxErrorsOnly();
 }
@@ -27,12 +39,18 @@ MainWindow::~MainWindow()
     delete popup;
 }
 
-void MainWindow::saveAs() {
-    QString saveFileName = QFileDialog::getSaveFileName(this);
+void MainWindow::newFile() {
+    ui->textEdit->clear();
+}
 
-    if (saveFileName.size() > 0) {
-        QFileDialog::saveFileContent(ui->textEdit->toPlainText().toUtf8());
-    }
+void MainWindow::openFile() {
+    QFileDialog::getOpenFileContent(tr("All files (*.*);;JASS script (*.j *.ai)"), [this](QString name, QByteArray byteArray) {
+        this->ui->textEdit->setText(byteArray);
+    });
+}
+
+void MainWindow::saveAs() {
+    QFileDialog::saveFileContent(ui->textEdit->toPlainText().toUtf8(), "myscrypt.j");
 }
 
 void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
@@ -40,82 +58,145 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
 
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
 
+    QTextCharFormat fmtNormal;
+    fmtNormal.setBackground(Qt::white);
+    fmtNormal.setFontWeight(QFont::Normal);
+
+    QTextCursor cursor(ui->textEdit->document());
+    cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
+
+    int line = 0;
+    int column = 0;
+
     for (const VJassToken &token : tokens) {
+        // move to token
+        int lines = token.getLine() - line;
+
+        if (lines > 0) {
+            column = 0;
+        }
+
+        cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lines);
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, token.getColumn() - column);
+        // format normal until here
+        cursor.setCharFormat(fmtNormal);
+        cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
+
+        // specify the format for the token itself
+        QTextCharFormat fmt;
+
         if (token.isValidKeyword()) {
-            QTextCharFormat fmt;
             fmt.setForeground(Qt::black);
             fmt.setFontWeight(QFont::Bold);
-
-            QTextCursor cursor(ui->textEdit->document());
-            cursor.setPosition(token.getColumn(), QTextCursor::MoveAnchor);
-            cursor.setPosition(token.getColumn() + token.getValue().length(), QTextCursor::KeepAnchor);
-            cursor.setCharFormat(fmt);
-
-            qDebug() << "Column:" << token.getColumn() << " token end " << cursor.selectionEnd();
-            qDebug() << "Selection start:" << cursor.selectionStart() << " and selection end " << token.getColumn() + token.getValue().length();
-
-            QTextCharFormat fmtNormal;
-            fmtNormal.setBackground(Qt::white);
-            fmt.setFontWeight(QFont::Normal);
-            cursor.clearSelection();
-            cursor.movePosition(QTextCursor::NextCharacter);
-            cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-            cursor.setCharFormat(fmtNormal);
+        } else if (token.getType() == VJassToken::Comment) {
+            fmt.setForeground(Qt::gray);
+            fmt.setFontItalic(true);
+        } else {
+            fmt = fmtNormal;
         }
+
+        //qDebug() << "Before selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+
+        // move to the token's end but keep the selection and format it
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, token.getValue().length());
+        cursor.setCharFormat(fmt);
+        // move anchor to the end
+        cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
+
+        //qDebug() << "Token line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
+        //qDebug() << "After selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+
+        // TODO set properly if the token contains line breaks
+        // update current line and column
+        line = token.getLine();
+        column = token.getColumn() + token.getValue().length();
     }
 
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
 }
 
-void MainWindow::updateSyntaxErrors(bool autoComplete, bool highlight) {
-    QList<VJassToken> tokens;
-    VJassAst ast = this->vjassParser.parse(ui->textEdit->toPlainText(), tokens);
-    QString browserOutput;
-    int number = 0;
+void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
+    if (item->data(Qt::UserRole).isValid() && item->data(Qt::UserRole).canConvert<QPoint>()) {
+        int line = item->data(Qt::UserRole).toPoint().x();
+        int column = item->data(Qt::UserRole).toPoint().y();
 
-    for (VJassParseError &parseError : ast.getAllParseErrors()) {
-        if (number > 0) {
-            browserOutput += "\n";
+        QTextCursor cursor(ui->textEdit->document());
+        cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
+        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line);
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, column);
+        ui->textEdit->setTextCursor(cursor);
+        ui->textEdit->setFocus();
+
+        qDebug() << "Moving cursor to line" << line << "and column" << column;
+    }
+}
+
+void MainWindow::updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight) {
+    if (checkSyntax || autoComplete || highlight) {
+        // TODO Scan and create AST asynchronously so the GUI is not blocked all the time! Only apply it if it has not changed
+        VJassScanner scanner;
+        QList<VJassToken> tokens = scanner.scan(ui->textEdit->toPlainText(), true);
+
+        if (highlight) {
+            qDebug() << "Highlight!";
+            highlightTokens(tokens);
         }
 
-        browserOutput += tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError());
-        number++;
-    }
+        if (checkSyntax || autoComplete) {
+            VJassAst ast = this->vjassParser.parse(ui->textEdit->toPlainText(), tokens);
 
-    if (number > 0) {
-        ui->textBrowser->setText(browserOutput);
-    } else {
-        ui->textBrowser->setText("No syntax errors.");
-    }
+            ui->outputListWidget->clear();
 
-    if (highlight) {
-        qDebug() << "Highlight!";
-        highlightTokens(tokens);
-    }
+            for (VJassParseError &parseError : ast.getAllParseErrors()) {
+                QListWidgetItem *item = new QListWidgetItem(tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError()));
+                item->setData(Qt::UserRole, QPoint(parseError.getLine(), parseError.getColumn()));
+                ui->outputListWidget->addItem(item);
+            }
 
-    if (autoComplete && ast.getCodeCompletionSuggestions().size() > 0) {
-        popup->clear();
-        popup->setFocusProxy(this);
+            if (ui->outputListWidget->count() == 0) {
+                ui->outputListWidget->addItem("No syntax errors.");
+            }
 
-        for (VJassAst *codeCompletionSuggestion : ast.getCodeCompletionSuggestions()) {
-            new QTreeWidgetItem(popup, QStringList(codeCompletionSuggestion->toString()));
+            if (autoComplete && ast.getCodeCompletionSuggestions().size() > 0) {
+                popup->clear();
+                popup->setFocusProxy(this);
+
+                for (VJassAst *codeCompletionSuggestion : ast.getCodeCompletionSuggestions()) {
+                    new QTreeWidgetItem(popup, QStringList(codeCompletionSuggestion->toString()));
+                }
+
+                qDebug() << "Bottom right 1:" << ui->textEdit, ui->textEdit->cursorRect().bottomRight();
+                qDebug() << "Bottom right 2:" << ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight());
+
+                popup->move(ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight()));
+
+                popup->show();
+            }
         }
+    }
 
-        qDebug() << "Bottom right 1:" << ui->textEdit, ui->textEdit->cursorRect().bottomRight();
-        qDebug() << "Bottom right 2:" << ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight());
+    if (!highlight) {
+        // remove all hightlighting
+        disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
 
-        popup->move(ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight()));
+        QTextCursor cursor(ui->textEdit->document());
+        QTextCharFormat fmtNormal;
+        fmtNormal.setBackground(Qt::white);
+        fmtNormal.setFontWeight(QFont::Normal);
+        cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
+        cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+        cursor.setCharFormat(fmtNormal);
 
-        popup->show();
+        connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::updateSyntaxErrorsOnly);
     }
 }
 
 void MainWindow::updateSyntaxErrorsOnly() {
-    updateSyntaxErrors(false, true);
+    updateSyntaxErrors(ui->actionEnableSyntaxCheck->isChecked(), false, ui->actionEnableSyntaxHighlighting->isChecked());
 }
 
 void MainWindow::updateSyntaxErrorsWithAutoComplete() {
-    updateSyntaxErrors(true, true);
+    updateSyntaxErrors(ui->actionEnableSyntaxCheck->isChecked(), true, ui->actionEnableSyntaxHighlighting->isChecked());
 }
 
 void MainWindow::clickPopupItem(const QModelIndex &index) {

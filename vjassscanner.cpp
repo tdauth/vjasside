@@ -24,7 +24,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 i += keyword.length();
                 column += keyword.length();
 
-                qDebug() << "Matched keyword" << keyword << " with length" << keyword.length();
+                //qDebug() << "Matched keyword" << keyword << " with length" << keyword.length();
 
                 matched = true;
 
@@ -50,7 +50,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 }
 
                 int length = j - i;
-                qDebug() << "Whitespaces with length " << length;
+                //qDebug() << "Whitespaces with length " << length;
 
                 if (!dropWhiteSpaces) {
                     result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::WhiteSpace));
@@ -68,18 +68,25 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 matched = true;
             // line comment
             } else if (currentContent.startsWith("//")) {
-                int j = i;
+                int j = i + 2;
+                bool gotLineBreakEnd = false;
 
-                for ( ; j < content.size(); j++) {
+                for ( ; j < content.size() && !gotLineBreakEnd; ) {
                     if (content.at(j) == '\n') {
-                        break;
+                        gotLineBreakEnd = true;
+                    } else {
+                        j++;
                     }
                 }
 
-                result.push_back(VJassToken(content.mid(i, j - i), line, column, VJassToken::Comment));
+                int length = j - i;
 
-                column += j - i;
-                i += j - 1;
+                //qDebug() << "Line comment with length" << length;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Comment));
+
+                column += length;
+                i += length;
             // block comment
             }  else if (currentContent.startsWith("/*")) {
                 int j = i + 2;
