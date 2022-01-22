@@ -12,6 +12,17 @@ public:
     const static QString KEYWORD_TAKES;
     const static QString KEYWORD_NOTHING;
     const static QString KEYWORD_RETURNS;
+    const static QString KEYWORD_RETURN;
+    const static QString KEYWORD_LOCAL;
+    const static QString KEYWORD_SET;
+    const static QString KEYWORD_CALL;
+    const static QString KEYWORD_IF;
+    const static QString KEYWORD_THEN;
+    const static QString KEYWORD_ELSEIF;
+    const static QString KEYWORD_ENDIF;
+    const static QString KEYWORD_LOOP;
+    const static QString KEYWORD_ENDLOOP;
+    const static QString KEYWORD_EXITWHEN;
     const static QString KEYWORD_GLOBALS;
     const static QString KEYWORD_ENDGLOBALS;
     const static QString KEYWORD_CONSTANT;
@@ -31,6 +42,16 @@ public:
         TakesKeyword,
         NothingKeyword,
         ReturnsKeyword,
+        ReturnKeyword,
+        SetKeyword,
+        CallKeyword,
+        IfKeyword,
+        ThenKeyword,
+        ElseifKeyword,
+        EndifKeyword,
+        LoopKeyword,
+        EndloopKeyword,
+        ExitwhenKeyword,
         EndfunctionKeyword,
         ConstantKeyword,
         TypeKeyword,
@@ -41,10 +62,15 @@ public:
         NullKeyword,
         Comment,
         Operator,
+        LeftBracket,
+        RightBracket,
+        LeftSquareBracket,
+        RightSquareBracket,
         BooleanLiteral,
         IntegerLiteral,
         RealLiteral,
         RawCodeLiteral,
+        StringLiteral,
         LineBreak,
         WhiteSpace,
         Separator,

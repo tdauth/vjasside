@@ -187,6 +187,46 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 column += length;
                 i += length;
+            // string literal
+            } else if (currentContent.startsWith("\"")) {
+                int j = i + 1;
+
+                for ( ; j < content.size(); j++) {
+                    if (content.at(j) == '\"') {
+                        break;
+                    }
+                }
+
+                const int length = j - i;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::StringLiteral));
+
+                column += length;
+                i += length;
+            // left bracket
+            } else if (currentContent.startsWith("(")) {
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::LeftBracket));
+
+                column += 1;
+                i += 1;
+            // right bracket
+            } else if (currentContent.startsWith(")")) {
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::RightBracket));
+
+                column += 1;
+                i += 1;
+            // left square bracket
+            } else if (currentContent.startsWith("[")) {
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::LeftSquareBracket));
+
+                column += 1;
+                i += 1;
+            // right square bracket
+            } else if (currentContent.startsWith("]")) {
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::RightSquareBracket));
+
+                column += 1;
+                i += 1;
             // text
             // TODO match a whole group maybe
             } else if (QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(i))).hasMatch()) {

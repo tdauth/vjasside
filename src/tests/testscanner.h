@@ -10,6 +10,8 @@ class TestScanner : public QObject
     private slots:
         void canScanFunction();
         void canScanCommonJ();
+        void canScanCommonAI();
+        void canScanCommonBlizzardJ();
 };
 
 #endif // TESTSCANNER_H

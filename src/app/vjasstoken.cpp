@@ -11,6 +11,16 @@ const QString VJassToken::KEYWORD_FUNCTION = "function";
 const QString VJassToken::KEYWORD_TAKES = "takes";
 const QString VJassToken::KEYWORD_NOTHING = "nothing";
 const QString VJassToken::KEYWORD_RETURNS = "returns";
+const QString VJassToken::KEYWORD_RETURN = "return";
+const QString VJassToken::KEYWORD_SET = "set";
+const QString VJassToken::KEYWORD_CALL = "call";
+const QString VJassToken::KEYWORD_IF = "if";
+const QString VJassToken::KEYWORD_THEN = "then";
+const QString VJassToken::KEYWORD_ELSEIF = "elseif";
+const QString VJassToken::KEYWORD_ENDIF = "endif";
+const QString VJassToken::KEYWORD_LOOP = "loop";
+const QString VJassToken::KEYWORD_ENDLOOP = "endloop";
+const QString VJassToken::KEYWORD_EXITWHEN = "exitwhen";
 const QString VJassToken::KEYWORD_GLOBALS = "globals";
 const QString VJassToken::KEYWORD_ENDGLOBALS = "endglobals";
 const QString VJassToken::KEYWORD_CONSTANT = "constant";
@@ -25,6 +35,16 @@ const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_TAKES,
     VJassToken::KEYWORD_NOTHING,
     VJassToken::KEYWORD_RETURNS,
+    VJassToken::KEYWORD_RETURN,
+    VJassToken::KEYWORD_SET,
+    VJassToken::KEYWORD_CALL,
+    VJassToken::KEYWORD_IF,
+    VJassToken::KEYWORD_THEN,
+    VJassToken::KEYWORD_ELSEIF,
+    VJassToken::KEYWORD_ENDIF,
+    VJassToken::KEYWORD_LOOP,
+    VJassToken::KEYWORD_ENDLOOP,
+    VJassToken::KEYWORD_EXITWHEN,
     VJassToken::KEYWORD_GLOBALS,
     VJassToken::KEYWORD_ENDGLOBALS,
     VJassToken::KEYWORD_CONSTANT,
@@ -239,6 +259,16 @@ bool VJassToken::isValidKeyword() const {
         || getType() == VJassToken::TakesKeyword
         || getType() == VJassToken::NothingKeyword
         || getType() == VJassToken::ReturnsKeyword
+        || getType() == VJassToken::ReturnKeyword
+        || getType() == VJassToken::SetKeyword
+        || getType() == VJassToken::CallKeyword
+        || getType() == VJassToken::IfKeyword
+        || getType() == VJassToken::ThenKeyword
+        || getType() == VJassToken::ElseifKeyword
+        || getType() == VJassToken::EndifKeyword
+        || getType() == VJassToken::LoopKeyword
+        || getType() == VJassToken::EndloopKeyword
+        || getType() == VJassToken::ExitwhenKeyword
         || getType() == VJassToken::ConstantKeyword
         || getType() == VJassToken::TypeKeyword
         || getType() == VJassToken::ExtendsKeyword
@@ -260,6 +290,26 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::NothingKeyword;
     } else if (keyword == KEYWORD_RETURNS) {
         return VJassToken::ReturnsKeyword;
+    } else if (keyword == KEYWORD_RETURN) {
+        return VJassToken::ReturnKeyword;
+    } else if (keyword == KEYWORD_SET) {
+        return VJassToken::SetKeyword;
+    } else if (keyword == KEYWORD_CALL) {
+        return VJassToken::CallKeyword;
+    } else if (keyword == KEYWORD_IF) {
+        return VJassToken::IfKeyword;
+    } else if (keyword == KEYWORD_THEN) {
+        return VJassToken::ThenKeyword;
+    } else if (keyword == KEYWORD_ELSEIF) {
+        return VJassToken::ElseifKeyword;
+    } else if (keyword == KEYWORD_ENDIF) {
+        return VJassToken::EndifKeyword;
+    } else if (keyword == KEYWORD_LOOP) {
+        return VJassToken::LoopKeyword;
+    } else if (keyword == KEYWORD_ENDLOOP) {
+        return VJassToken::EndloopKeyword;
+    } else if (keyword == KEYWORD_EXITWHEN) {
+        return VJassToken::ExitwhenKeyword;
     } else if (keyword == KEYWORD_CONSTANT) {
         return VJassToken::ConstantKeyword;
     } else if (keyword == KEYWORD_TYPE) {
