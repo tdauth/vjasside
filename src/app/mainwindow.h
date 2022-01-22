@@ -27,7 +27,8 @@ public:
 public slots:
     void newFile();
     void openFile();
-    void saveAs();
+    bool saveAs();
+    void quit();
 
     void updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight);
     void updateSyntaxErrorsOnly();
@@ -38,6 +39,9 @@ public slots:
     void aboutDialog();
 
     void restartTimer();
+    void documentChanges();
+
+    void updateWindowTitle();
 
 private slots:
     void highlightTokens(const QList<VJassToken> &tokens);
@@ -52,6 +56,10 @@ protected:
 private:
     Ui::MainWindow *ui;
 
+    bool documentHasChanged = false;
+    QString fileDir;
+
+    bool expectAutoComplete = false;
     AutoCompletionPopup *popup;
 
     // the scanner and parser is executed in a separate thread

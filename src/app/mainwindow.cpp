@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , popup(new AutoCompletionPopup)
     , timerId(0)
-    , timerIdCheck(startTimer(3000))
+    , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
     , scanAndParseInput(nullptr)
     , scanAndParseResults(nullptr)
 {
@@ -20,9 +20,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionNew, &QAction::triggered, this, &MainWindow::newFile);
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile);
     connect(ui->actionSaveAs, &QAction::triggered, this, &MainWindow::saveAs);
-    connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::close);
+    connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
     connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::updateSyntaxErrorsWithAutoComplete);
+    // trigger a restart so the result is updated even if the text has not changed
+    connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::restartTimer);
 
     connect(ui->actionEnableSyntaxHighlighting, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
     connect(ui->actionEnableSyntaxCheck, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
@@ -31,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     // whenever the user changes the text we have to wait with our highlighting and syntax check for some time to prevent blocking the GUI all the time
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
@@ -96,17 +99,86 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::newFile() {
-    ui->textEdit->clear();
+    if (documentHasChanged) {
+        if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
+            if (saveAs()) {
+                ui->textEdit->clear();
+
+                documentHasChanged = false;
+                updateWindowTitle();
+            }
+        }
+    } else {
+        ui->textEdit->clear();
+    }
 }
 
 void MainWindow::openFile() {
-    QFileDialog::getOpenFileContent(tr("All files (*.*);;JASS script (*.j *.ai)"), [this](QString /* name */, QByteArray byteArray) {
-        this->ui->textEdit->setText(byteArray);
-    });
+    bool saved = true;
+
+    if (documentHasChanged) {
+        saved = false;
+
+        if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
+            if (saveAs()) {
+                saved = true;
+            }
+        }
+    }
+
+    if (saved) {
+        QString openFileName = QFileDialog::getOpenFileName(this, tr("Open File"), fileDir, tr("All files (*.*);;JASS script (*.j *.ai)"));
+
+        if (!openFileName.isEmpty()) {
+            QFile f(openFileName);
+            QFileInfo fileInfo(openFileName);
+            fileDir = fileInfo.absoluteDir().path();
+
+            if (f.open(QIODevice::ReadOnly)) {
+                this->ui->textEdit->setText(f.readAll());
+
+                documentHasChanged = false;
+                updateWindowTitle();
+            } else {
+                QMessageBox::warning(this, tr("Error"), tr("Error on reading file into %1").arg(openFileName));
+            }
+        }
+    }
 }
 
-void MainWindow::saveAs() {
-    QFileDialog::saveFileContent(ui->textEdit->toPlainText().toUtf8(), "myscrypt.j");
+bool MainWindow::saveAs() {
+    QString saveFileName = QFileDialog::getSaveFileName(this, tr("Save File"), fileDir, tr("All files (*.*);;JASS script (*.j *.ai)"));
+
+    if (!saveFileName.isEmpty()) {
+        QFile f(saveFileName);
+        QFileInfo fileInfo(saveFileName);
+        fileDir = fileInfo.absoluteDir().path();
+
+        if (f.open(QIODevice::WriteOnly)) {
+            f.write(ui->textEdit->toPlainText().toUtf8());
+
+            documentHasChanged = false;
+            updateWindowTitle();
+
+            return true;
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("Error on writing file into %1").arg(saveFileName));
+        }
+    }
+
+    return false;
+}
+
+void MainWindow::quit() {
+    if (documentHasChanged) {
+        if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
+            if (saveAs()) {
+                this->close();
+            }
+        }
+    } else {
+        this->close();
+    }
 }
 
 void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
@@ -117,6 +189,7 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
 
     // make sure no slots are triggered by this to prevent endless recursions
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
     QTextCharFormat fmtNormal;
     fmtNormal.setBackground(Qt::white);
@@ -133,7 +206,7 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
         // only hightlight certain tokens at all
         if (token.getType() != VJassToken::WhiteSpace && token.getType() != VJassToken::LineBreak) {
             // move to token
-            int lines = token.getLine() - line;
+            const int lines = token.getLine() - line;
             int columns = 0;
 
             if (lines > 0) {
@@ -212,24 +285,18 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
     ui->textEdit->setCurrentCharFormat(fmtNormal);
 
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
     qDebug() << "Ending highlighting tokens with tokens size:" << tokens.size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
 }
 
 void MainWindow::highlightAst(VJassAst *ast) {
+    // TODO Maybe we can highlight tokens and AST together in one single function going through all characters.
     qDebug() << "AST size:" << ast->getChildren().size();
-    QStack<VJassParseError> parseErrors;
-
-    for (VJassParseError parseError : ast->getAllParseErrors()) {
-        parseErrors.push_back(parseError);
-    }
+    QList<VJassParseError> parseErrors = ast->getAllParseErrors();
 
     // make sure no slots are triggered by this to prevent endless recursions
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-
-    QTextCharFormat fmtNormal;
-    fmtNormal.setBackground(Qt::white);
-    fmtNormal.setFontWeight(QFont::Normal);
 
     QTextCursor cursor(ui->textEdit->document());
     // start at the beginning of the document
@@ -238,47 +305,37 @@ void MainWindow::highlightAst(VJassAst *ast) {
     int line = 0;
     int column = 0;
 
-    while (!parseErrors.isEmpty()) {
-        VJassParseError parseError = parseErrors.pop();
-
+    // make sure that they are handled in their correct order in the document
+    for (const VJassParseError &parseError : parseErrors) {
         // move to token
-        int lines = parseError.getLine() - line;
+        const int lines = parseError.getLine() - line;
         int columns = 0;
 
         if (lines > 0) {
-            cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::KeepAnchor);
-            cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lines);
+            cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+            cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, lines);
             column = parseError.getColumn();
             columns = parseError.getColumn();
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, columns);
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, columns);
             //qDebug() << "Moving to the start of the line";
             //qDebug() << "Moving down" << lines << "lines.";
         } else {
             columns = parseError.getColumn() - column;
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, columns);
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, columns);
             //qDebug() << "Moving to the right" << column << "columns.";
         }
 
-        //qDebug() << "After moving selection to token to format normal, selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-        cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
+        const int errorLength = parseError.getError().length();
 
-        //qDebug() << "After moving selection to token, selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-        // specify the format for the token itself
-        QTextCharFormat fmt;
-        fmt.setUnderlineColor(Qt::red);
-        fmt.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
-
-        //qDebug() << "Before selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-        // move to the token's end but keep the selection and format it
-        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, parseError.getError().length());
-        cursor.setCharFormat(fmt);
-        // move anchor to the end
-        cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
-
-        //qDebug() << "Token:" << token.getValue() << "with line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
-        //qDebug() << "After selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
+        // handle every character one by one to keep the current format
+        for (int i = cursor.position(); i < errorLength; i++) {
+            QTextCharFormat currentFormat = cursor.charFormat();
+            // specify the format for syntax errors
+            currentFormat.setUnderlineColor(Qt::red);
+            currentFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
+            cursor.setCharFormat(currentFormat);
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, 1);
+        }
 
         // TODO set properly if the token contains line breaks
         // update current line and column
@@ -307,6 +364,8 @@ void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
 }
 
 void MainWindow::updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight) {
+    this->expectAutoComplete = autoComplete;
+
     if (!checkSyntax && !autoComplete && !highlight) {
         clearAllHighLighting();
     }
@@ -368,11 +427,36 @@ void MainWindow::restartTimer() {
     scanAndParseInput.storeRelease(new QString(text));
     scanAndParseResults.storeRelease(nullptr);
 
-    timerId = startTimer(3000);
+    // wait 2 seconds after the user has stopped writing something
+    timerId = startTimer(2000);
+}
+
+void MainWindow::documentChanges() {
+    documentHasChanged = true;
+    updateWindowTitle();
+
+    const QTextCursor startCursor = ui->textEdit->cursorForPosition(QPoint(0, 0));
+    //const int start_pos = startCursor.position();
+    const QPoint bottom_right(ui->textEdit->viewport()->width() - 1, ui->textEdit->viewport()->height() - 1);
+    const QTextCursor bottomCursor = ui->textEdit->cursorForPosition(bottom_right);
+    //const int end_pos = ui->textEdit->cursorForPosition(bottom_right).position();
+
+    const int visibleLines = bottomCursor.blockNumber() - startCursor.blockNumber();
+
+    qDebug() << "Visible lines" << visibleLines;
+}
+
+void MainWindow::updateWindowTitle() {
+    if (documentHasChanged) {
+        setWindowTitle(tr("Baradé's vJass IDE *"));
+    } else {
+        setWindowTitle(tr("Baradé's vJass IDE"));
+    }
 }
 
 void MainWindow::clearAllHighLighting() {
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
     QTextCursor cursor(ui->textEdit->document());
     QTextCharFormat fmtNormal;
@@ -383,6 +467,7 @@ void MainWindow::clearAllHighLighting() {
     cursor.setCharFormat(fmtNormal);
 
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 }
 
 void MainWindow::timerEvent(QTimerEvent *event) {
@@ -398,7 +483,8 @@ void MainWindow::timerEvent(QTimerEvent *event) {
             qDebug() << "Got scan and parse result from thread into the main window";
 
             bool checkSyntax = ui->actionEnableSyntaxCheck->isChecked();
-            bool autoComplete = false;
+            bool autoComplete = expectAutoComplete;
+            expectAutoComplete = false; // reset
             bool highlight = ui->actionEnableSyntaxHighlighting->isChecked();
 
             if (checkSyntax || autoComplete || highlight) {
@@ -410,14 +496,19 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                 if (checkSyntax || autoComplete) {
                     ui->outputListWidget->clear();
 
-                    for (const VJassParseError &parseError : scanAndParseResults->ast->getAllParseErrors()) {
+                    const QList<VJassParseError> parseErrors = scanAndParseResults->ast->getAllParseErrors();
+
+                    for (const VJassParseError &parseError : parseErrors) {
                         QListWidgetItem *item = new QListWidgetItem(tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError()));
                         item->setData(Qt::UserRole, QPoint(parseError.getLine(), parseError.getColumn()));
                         ui->outputListWidget->addItem(item);
                     }
 
                     if (ui->outputListWidget->count() == 0) {
-                        ui->outputListWidget->addItem("No syntax errors.");
+                        ui->outputListWidget->addItem(tr("No syntax errors."));
+                        ui->tabWidget->setTabText(0, tr("0 Syntax Errors"));
+                    } else {
+                        ui->tabWidget->setTabText(0, tr("%n Syntax Errors", "%n Syntax Error", parseErrors.length()));
                     }
 
                     if (highlight) {

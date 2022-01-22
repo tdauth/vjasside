@@ -4,12 +4,15 @@
 #include "vjassscanner.h"
 #include "vjassast.h"
 #include "vjassfunction.h"
+#include "vjassnative.h"
 #include "vjasskeyword.h"
 #include "vjasstype.h"
 
 VJassParser::VJassParser()
 {
 }
+
+namespace {
 
 inline void suggestLineStartKeywords(bool isInFunction, const VJassToken &token, VJassAst &ast) {
     QList<QString> keywords;
@@ -35,16 +38,136 @@ inline void suggestLineStartKeywords(bool isInFunction, const VJassToken &token,
     }
 }
 
+inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJassToken &token, VJassNative *vjassFunction, VJassAst *ast, int &i) {
+    i++;
+
+    if (i == tokens.size()) {
+        vjassFunction->addErrorAtEndOf(token, "Missing function declaration identifier.");
+    } else {
+        const VJassToken &identifier = tokens.at(i);
+
+        if (identifier.isValidIdentifier()) {
+            vjassFunction->setIdentifier(identifier.getValue());
+            i++;
+
+            if (i == tokens.size()) {
+                vjassFunction->addError(identifier, "Missing takes keyword.");
+                VJassKeyword *takesKeyword = new VJassKeyword(identifier.getLine(), identifier.getColumn());
+                takesKeyword->setKeyword(VJassToken::KEYWORD_TAKES);
+                ast->addCodeCompletionSuggestion(takesKeyword);
+            } else {
+                const VJassToken &takesKeyword = tokens.at(i);
+                i++;
+
+                if (takesKeyword.getType() != VJassToken::TakesKeyword) {
+                    vjassFunction->addError(takesKeyword, "Expected takes keyword instead of " + takesKeyword.getValue());
+                } else {
+                    if (i == tokens.size()) {
+                        vjassFunction->addErrorAtEndOf(takesKeyword, "Missing parameters.");
+                    // function parameters
+                    } else {
+                        bool gotError = false;
+                        bool expectMoreParameters = true;
+                        int parameterCounter = 0;
+
+                        while (i < tokens.size() && !gotError && expectMoreParameters) {
+                            const VJassToken &parameterType = tokens.at(i);
+
+                            if  (parameterType.getType() == VJassToken::NothingKeyword) {
+                                if (parameterCounter > 0) {
+                                    vjassFunction->addErrorAtEndOf(parameterType, "Unexpected nothing keyword");
+                                    gotError = true;
+                                } else {
+                                    expectMoreParameters = false;
+                                }
+                            } else {
+                                if (!parameterType.isValidType()) {
+                                    vjassFunction->addErrorAtEndOf(parameterType, "Invalid parameter type: " + parameterType.getValue());
+                                }
+
+                                // no parameter name
+                                if (i == tokens.size() - 1) {
+                                    vjassFunction->addErrorAtEndOf(parameterType, "Missing parameter name for parameter type " + parameterType.getValue());
+                                    gotError = true;
+                                } else {
+                                    const VJassToken &parameterName = tokens.at(i + 1);
+
+                                    if (parameterName.isValidIdentifier()) {
+                                        vjassFunction->addParameter(parameterType.getValue(), parameterName.getValue());
+                                    } else {
+                                        vjassFunction->addErrorAtEndOf(parameterName, "Invalid parameter name: " + parameterName.getValue());
+                                        gotError = true;
+                                    }
+                                }
+                            }
+
+                            i += 2;
+                            parameterCounter++;
+
+                            if (i < tokens.size()) {
+                                const VJassToken &separatorToken = tokens.at(i);
+
+                                // , for the next parameter
+                                if (separatorToken.getType() == VJassToken::Separator) {
+                                    expectMoreParameters = true;
+                                    i++;
+                                // something unexpected instead of , or returns
+                                } else if (separatorToken.getType() != VJassToken::ReturnsKeyword) {
+                                    vjassFunction->addError(separatorToken, "Expected , but got  " + separatorToken.getValue());
+                                    gotError = true;
+                                // returns
+                                } else {
+                                    expectMoreParameters = false;
+                                    i++;
+                                }
+                            // nothing left -> missing return
+                            } else if (!gotError) {
+                                expectMoreParameters = false;
+                                gotError = true;
+                                vjassFunction->addError(tokens.at(i - 1), QObject::tr("Expected returns or , character for more parameters"));
+                            }
+                        }
+
+                        // return type
+                        if (!gotError) {
+                            if (expectMoreParameters) {
+                                vjassFunction->addErrorAtEndOf(tokens.at(i - 1), QObject::tr("Expecting more parameters"));
+                            } else if (i >= tokens.size()) {
+                                vjassFunction->addErrorAtEndOf(tokens.at(i - 1), QObject::tr("Missing return type"));
+                            } else {
+                                const VJassToken &returnType = tokens.at(i);
+                                vjassFunction->setReturnType(returnType.getValue());
+
+                                if (!returnType.isValidType()) {
+                                    vjassFunction->addErrorAtEndOf(returnType, QObject::tr("Invalid return type: %1").arg(returnType.getValue()));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        } else {
+            vjassFunction->addError(identifier, "Invalid identifier: " + identifier.getValue());
+        }
+    }
+}
+
+}
+
 VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
     VJassAst *ast = new VJassAst(0, 0);
     bool isInFunction = false;
+    bool isInGlobals = false;
 
     for (int i = 0; i < tokens.size(); i++) {
         const VJassToken &token = tokens.at(i);
-        bool gotNextLine = false;
 
+        // new line
+        if (token.getType() == VJassToken::LineBreak) {
+            // do nothing, just consume them
         // type
-        if (token.getType() == VJassToken::TypeKeyword) {
+        } else if (token.getType() == VJassToken::TypeKeyword) {
             VJassType *vjassType = new VJassType(token.getLine(), token.getColumn());
 
             if (isInFunction) {
@@ -99,6 +222,57 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
             }
 
             ast->addChild(vjassType);
+        // constant
+        } else if (token.getType() == VJassToken::ConstantKeyword) {
+            if (isInGlobals) {
+                // TODO parse constant
+                ast->addErrorAtEndOf(token, QObject::tr("Constants are not supported yet."));
+            } else {
+                i++;
+
+                if (i >= tokens.size()) {
+                    ast->addErrorAtEndOf(token, QObject::tr("Expected either native or function after %1").arg(token.getValue()));
+                } else {
+                    const VJassToken &functionKeyword = tokens.at(i);
+
+                    if (functionKeyword.getType() == VJassToken::FunctionKeyword) {
+                        VJassFunction *vjassFunction = new VJassFunction(token.getLine(), token.getColumn());
+
+                        // TODO Depends on where it is done
+                        if (isInFunction) {
+                            vjassFunction->addError(token, "Cannot declare function inside of function.");
+                        }
+
+                        isInFunction = true;
+                        parseFunctionDeclaration(tokens, token, vjassFunction, ast, i);
+
+                        ast->addChild(vjassFunction);
+                    } else if (functionKeyword.getType() == VJassToken::NativeKeyword) {
+                        VJassNative *vjassNative = new VJassNative(token.getLine(), token.getColumn());
+
+                        if (isInFunction) {
+                            vjassNative->addError(token, QObject::tr("Cannot declare native inside of function."));
+                        }
+
+                        parseFunctionDeclaration(tokens, token, vjassNative, ast, i);
+
+                        ast->addChild(vjassNative);
+                    } else {
+                        ast->addError(functionKeyword, QObject::tr("Expected either native or function instead of %1.").arg(functionKeyword.getValue()));
+                    }
+                }
+            }
+        // native
+        } else if (token.getType() == VJassToken::NativeKeyword) {
+            VJassNative *vjassNative = new VJassNative(token.getLine(), token.getColumn());
+
+            if (isInFunction) {
+                vjassNative->addError(token, "Cannot declare native inside of function.");
+            }
+
+            parseFunctionDeclaration(tokens, token, vjassNative, ast, i);
+
+            ast->addChild(vjassNative);
         // function
         } else if (token.getType() == VJassToken::FunctionKeyword) {
             VJassFunction *vjassFunction = new VJassFunction(token.getLine(), token.getColumn());
@@ -109,127 +283,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
             }
 
             isInFunction = true;
-            i++;
-
-            if (i == tokens.size()) {
-                vjassFunction->addError(token.getLine(), token.getColumn() + token.getValue().length(), "Missing function declaration identifier.");
-            } else {
-                const VJassToken &identifier = tokens.at(i);
-
-                if (identifier.isValidIdentifier()) {
-                    vjassFunction->setIdentifier(identifier.getValue());
-                    i++;
-
-                    if (i == tokens.size()) {
-                        vjassFunction->addError(identifier, "Missing takes keyword.");
-                        VJassKeyword *takesKeyword = new VJassKeyword(identifier.getLine(), identifier.getColumn());
-                        takesKeyword->setKeyword(VJassToken::KEYWORD_TAKES);
-                        ast->addCodeCompletionSuggestion(takesKeyword);
-                    } else {
-                        const VJassToken &takesKeyword = tokens.at(i);
-                        i++;
-
-                        if (takesKeyword.getType() != VJassToken::TakesKeyword) {
-                            vjassFunction->addError(takesKeyword, "Expected takes keyword instead of " + takesKeyword.getValue());
-                        } else {
-                            if (i == tokens.size()) {
-                                vjassFunction->addErrorAtEndOf(takesKeyword, "Missing parameters.");
-                            // function parameters
-                            } else {
-                                bool gotError = false;
-                                bool expectMoreParameters = true;
-                                int parameterCounter = 0;
-
-                                if (i + 1 < tokens.size()) {
-                                    for (i = i + 1; i < tokens.size() && !gotError; ) {
-                                        const VJassToken &parameterType = tokens.at(i);
-
-                                        if  (parameterType.getType() == VJassToken::NothingKeyword) {
-                                            if (parameterCounter > 0) {
-                                                vjassFunction->addErrorAtEndOf(parameterType, "Unexpected nothing keyword");
-                                                gotError = true;
-                                            } else {
-                                                expectMoreParameters = false;
-                                            }
-
-                                            break;
-                                        } else if (i == tokens.size() - 1) {
-                                            vjassFunction->addErrorAtEndOf(parameterType, "Missing parameter name for parameter type " + parameterType.getValue());
-                                            gotError = true;
-                                        } else {
-                                            if (!parameterType.isValidType()) {
-                                                vjassFunction->addErrorAtEndOf(parameterType, "Invalid parameter type: " + parameterType.getValue());
-                                            }
-
-                                            const VJassToken &parameterName = tokens.at(i + 1);
-
-                                            if (parameterName.isValidIdentifier()) {
-                                                vjassFunction->addParameter(parameterType.getValue(), parameterName.getValue());
-                                            } else {
-                                                vjassFunction->addErrorAtEndOf(parameterName, "Invalid parameter name: " + parameterName.getValue());
-                                                gotError = true;
-                                            }
-                                        }
-
-                                        i += 2;
-                                        parameterCounter++;
-
-                                        const int tmpIndex = i + 1;
-
-                                        if (tmpIndex < tokens.size()) {
-                                            const VJassToken &separatorToken = tokens.at(tmpIndex);
-
-                                            if (separatorToken.getType() == VJassToken::Separator) {
-                                                expectMoreParameters = true;
-                                                i = tmpIndex;
-                                            } else if (separatorToken.getType() != VJassToken::ReturnsKeyword) {
-                                                vjassFunction->addError(separatorToken, "Expected , but got  " + separatorToken.getValue());
-                                                gotError = true;
-                                            } else {
-                                                expectMoreParameters = false;
-                                            }
-                                        } else {
-                                            expectMoreParameters = false;
-                                        }
-                                    }
-                                }
-
-                                if (!gotError) {
-                                    if (expectMoreParameters) {
-                                        vjassFunction->addErrorAtEndOf(tokens.at(i - 1), "Expected more parameters!");
-                                    } else {
-                                        if (tokens.size() <= i) {
-                                            vjassFunction->addErrorAtEndOf(tokens.at(i - 1), "Missing returns!");
-                                        } else {
-                                            const VJassToken &returnsToken = tokens.at(i);
-
-                                            if (returnsToken.getType() != VJassToken::ReturnsKeyword) {
-                                                vjassFunction->addError(returnsToken, "Expected returns instead of " + returnsToken.getValue());
-                                            } else {
-                                                i++;
-
-                                                if (tokens.size() == i) {
-                                                    vjassFunction->addErrorAtEndOf(returnsToken, "Missing return type!");
-                                                } else {
-                                                    const VJassToken &returnType = tokens.at(i);
-
-                                                    vjassFunction->setReturnType(returnType.getValue());
-
-                                                    i++;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-
-                } else {
-                    vjassFunction->addError(identifier, "Invalid identifier: " + identifier.getValue());
-                }
-            }
+            parseFunctionDeclaration(tokens, token, vjassFunction, ast, i);
 
             ast->addChild(vjassFunction);
         } else if (token.getType() == VJassToken::EndfunctionKeyword) {
@@ -250,35 +304,25 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
             ast->addError(token, "Unexpected keyword: " + token.getValue());
         }
 
-        // add comments
-        if (tokens.size() > i) {
-            const VJassToken &startingToken = tokens.at(i);
+        // add comments to the last AST child
+        // comments might be useful attached to their declarations to give some information
+        const int commentsIndex = i + 1;
+
+        if (tokens.size() > commentsIndex) {
+            const VJassToken &commentsToken = tokens.at(commentsIndex);
             VJassAst *child = ast->getChildren().isEmpty() ? ast : ast->getChildren().last();
 
-            if (startingToken.getType() != VJassToken::Comment && startingToken.getType() != VJassToken::LineBreak) {
-                child->addError(startingToken, "Expected comment instead of " + startingToken.getValue());
-            } else if (startingToken.getType() == VJassToken::Comment) {
-                // TODO use the whole line from column of starting token.
-                child->addComment(startingToken.getValue());
+            if (commentsToken.getType() != VJassToken::Comment && commentsToken.getType() != VJassToken::LineBreak) {
+                child->addError(commentsToken, QObject::tr("Expected comment or line break instead of %1").arg(commentsToken.getValue()));
+            } else if (commentsToken.getType() == VJassToken::Comment) {
+                child->addComment(commentsToken.getValue());
+            // line break
             } else {
-                gotNextLine = true;
-            }
-        }
-
-        // until next line
-        if (!gotNextLine) {
-            for ( ; i < tokens.size(); i++) {
-                 const VJassToken &startingToken = tokens.at(i);
-
-                 if (startingToken.getType() == VJassToken::LineBreak) {
-                     i++;
-
-                     break;
-                 }
             }
         }
     }
 
+    // suggest auto completions in a new empty document
     if (tokens.isEmpty()) {
         if (!isInFunction) {
             VJassKeyword *functionKeyword = new VJassKeyword(0, 0);

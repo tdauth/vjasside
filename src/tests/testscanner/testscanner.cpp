@@ -1,6 +1,6 @@
 #include <QtTest>
 
-#include "../app/vjassscanner.h"
+#include "../../app/vjassscanner.h"
 #include "testscanner.h"
 
 void TestScanner::canScanFunction()
@@ -23,14 +23,20 @@ void TestScanner::canScanCommonJ() {
 
     VJassScanner scanner;
 
-    QList<VJassToken> tokens = scanner.scan(input, false);
+    QList<VJassToken> tokens;
 
-    QCOMPARE(tokens.size(), 68588);
+    QBENCHMARK {
+        tokens = scanner.scan(input, false);
+    }
+
+    QCOMPARE(tokens.size(), 57546);
     QCOMPARE(input.size(), 355533);
 
-    tokens = scanner.scan(input, true);
+    QBENCHMARK {
+        tokens = scanner.scan(input, true);
+    }
 
-    QCOMPARE(tokens.size(), 46852);
+    QCOMPARE(tokens.size(), 35810);
     QCOMPARE(input.size(), 355533);
 }
 
@@ -41,19 +47,25 @@ void TestScanner::canScanCommonAI() {
 
     QTextStream in(&f);
     QString input = in.readAll();
-    QCOMPARE(input.size(), 355533);
+    QCOMPARE(input.size(), 95876);
 
     VJassScanner scanner;
 
-    QList<VJassToken> tokens = scanner.scan(input, false);
+    QList<VJassToken> tokens;
 
-    QCOMPARE(tokens.size(), 68588);
-    QCOMPARE(input.size(), 355533);
+    QBENCHMARK {
+        tokens = scanner.scan(input, false);
+    }
 
-    tokens = scanner.scan(input, true);
+    QCOMPARE(tokens.size(), 8461);
+    QCOMPARE(input.size(), 95876);
 
-    QCOMPARE(tokens.size(), 46846);
-    QCOMPARE(input.size(), 355533);
+    QBENCHMARK {
+        tokens = scanner.scan(input, true);
+    }
+
+    QCOMPARE(tokens.size(), 5077);
+    QCOMPARE(input.size(), 95876);
 }
 
 void TestScanner::canScanCommonBlizzardJ() {
@@ -63,20 +75,25 @@ void TestScanner::canScanCommonBlizzardJ() {
 
     QTextStream in(&f);
     QString input = in.readAll();
-    QCOMPARE(input.size(), 355533);
+    QCOMPARE(input.size(), 471054);
 
     VJassScanner scanner;
 
-    QList<VJassToken> tokens = scanner.scan(input, false);
+    QList<VJassToken> tokens;
 
-    QCOMPARE(tokens.size(), 68588);
-    QCOMPARE(input.size(), 355533);
+    QBENCHMARK {
+        tokens = scanner.scan(input, false);
+    }
 
-    tokens = scanner.scan(input, true);
+    QCOMPARE(tokens.size(), 5733);
+    QCOMPARE(input.size(), 471054);
 
-    QCOMPARE(tokens.size(), 46846);
-    QCOMPARE(input.size(), 355533);
+    QBENCHMARK {
+        tokens = scanner.scan(input, true);
+    }
+
+    QCOMPARE(tokens.size(), 3354);
+    QCOMPARE(input.size(), 471054);
 }
 
 QTEST_MAIN(TestScanner)
-//#include "testscanner.moc"

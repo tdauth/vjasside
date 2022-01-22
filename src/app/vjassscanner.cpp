@@ -229,11 +229,11 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 i += 1;
             // text
             // TODO match a whole group maybe
-            } else if (QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(i))).hasMatch()) {
+            } else if (QRegularExpression("[A-Za-z_]{1}").match(QString(content.at(i))).hasMatch()) {
                 int j = i + 1;
 
                 for ( ; j < content.size(); j++) {
-                    if (!QRegularExpression("[A-Za-z0-9]{1}").match(QString(content.at(j))).hasMatch()) {
+                    if (!QRegularExpression("[A-Za-z0-9_]{1}").match(QString(content.at(j))).hasMatch()) {
                         break;
                     }
                 }

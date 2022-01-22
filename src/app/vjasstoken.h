@@ -37,6 +37,8 @@ public:
     const static QSet<QString> COMMONJ_NATIVES_ALL;
     const static QSet<QString> COMMONJ_CONSTANTS_ALL;
 
+    const static QRegularExpression IDENTIFIER_REGEX;
+
     enum Type {
         FunctionKeyword,
         TakesKeyword,

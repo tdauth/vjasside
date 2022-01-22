@@ -210,6 +210,10 @@ const QSet<QString> VJassToken::COMMONJ_CONSTANTS_ALL = {
     "FALSE"
 };
 
+// http://jass.sourceforge.net/doc/bnf.shtml
+// id              := [a-zA-Z]([a-zA-Z0-9_]* [a-zA-Z0-9])?
+const QRegularExpression VJassToken::IDENTIFIER_REGEX = QRegularExpression("[a-zA-Z]([a-zA-Z0-9_]* [a-zA-Z0-9])?");
+
 VJassToken::VJassToken(const QString &value, int line, int column, Type type)
     : value(value)
     , line(line)
@@ -250,7 +254,7 @@ bool VJassToken::isValidType() const {
 }
 
 bool VJassToken::isValidIdentifier() const {
-    return QRegularExpression("[a-zA-Z]{1}[a-zA-Z0-9]*").match(getValue()).hasMatch() && !VJassToken::KEYWRODS_ALL.contains(getValue());
+    return IDENTIFIER_REGEX.match(getValue()).hasMatch() && !VJassToken::KEYWRODS_ALL.contains(getValue());
 }
 
 bool VJassToken::isValidKeyword() const {

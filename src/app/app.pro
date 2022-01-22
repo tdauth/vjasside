@@ -11,12 +11,14 @@ CONFIG += no_testcase_installs
 
 SOURCES += \
     autocompletionpopup.cpp \
+    linenumbers.cpp \
     main.cpp \
     mainwindow.cpp \
     vjassast.cpp \
     vjassfunction.cpp \
     vjassfunctionparameter.cpp \
     vjasskeyword.cpp \
+    vjassnative.cpp \
     vjassparseerror.cpp \
     vjassparser.cpp \
     vjassparseresult.cpp \
@@ -26,11 +28,13 @@ SOURCES += \
 
 HEADERS += \
     autocompletionpopup.h \
+    linenumbers.h \
     mainwindow.h \
     vjassast.h \
     vjassfunction.h \
     vjassfunctionparameter.h \
     vjasskeyword.h \
+    vjassnative.h \
     vjassparseerror.h \
     vjassparser.h \
     vjassparseresult.h \
@@ -39,6 +43,7 @@ HEADERS += \
     vjasstype.h
 
 FORMS += \
+    linenumbers.ui \
     mainwindow.ui
 
 # Default rules for deployment.

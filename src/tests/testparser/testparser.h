@@ -8,7 +8,7 @@ class TestParser : public QObject
     Q_OBJECT
 
     private slots:
-        void canParseFunction();
+        void canParseCommonJ();
 };
 
 #endif // TESTPARSER_H
