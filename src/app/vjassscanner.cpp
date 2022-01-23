@@ -13,7 +13,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
     int column = 0;
 
     for (int i = 0; i < content.size(); ) {
-        // TODO Avoid copying at all cost -> some string view
+        // TODO Avoid copying at all cost -> some string view, should not by copied by implicit sharing.
         QString currentContent = content.mid(i);
 
         bool matched = false;
@@ -38,8 +38,6 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 i += 1;
                 line += 1;
                 column = 0;
-
-                matched = true;
             } else if (currentContent.startsWith(" ") || currentContent.startsWith("\t")) {
                 int j = i + 1;
 
@@ -58,14 +56,10 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 i += length;
                 column += length;
-
-                matched = true;
             } else if (currentContent.startsWith(",")) {
                 result.push_back(VJassToken(",", line, column, VJassToken::Separator));
                 i += 1;
                 column += 1;
-
-                matched = true;
             // line comment
             } else if (currentContent.startsWith("//")) {
                 int j = i + 2;
@@ -148,7 +142,27 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 column += length;
                 i += length;
-            // integer literal
+
+            //decimal         := [1-9][0-9]*
+            //octal           := '0'[0-7]*
+            //hex             := '$'[0-9a-fA-F]+ | '0'[xX][0-9a-fA-F]+
+            // fourcc          := ''' .{4} '''
+            // integer or real literal
+            } else if (QRegularExpression("\\$[0-9a-fA-F]{1}").match(QString(content.mid(i, 2))).hasMatch()) {
+                int j = i + 2;
+
+                for ( ; j < content.size(); j++) {
+                    if (!QRegularExpression("[0-9a-fA-F]{1}").match(QString(content.at(j))).hasMatch()) {
+                        break;
+                    }
+                }
+
+                const int length = j - i;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::IntegerLiteral));
+
+                column += length;
+                i += length;
             } else if (QRegularExpression("[0-9]{1}").match(QString(content.at(i))).hasMatch()) {
                 int j = i + 1;
                 int numberOfDots = 0;
