@@ -87,6 +87,9 @@ public:
     int getColumn() const;
     Type getType() const;
 
+    int getLength() const;
+    bool highlight() const;
+
     bool isValidType() const;
     bool isValidIdentifier() const;
     bool isValidKeyword() const;

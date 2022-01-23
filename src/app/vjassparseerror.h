@@ -3,12 +3,12 @@
 
 #include <QString>
 
-
 class VJassParseError
 {
 public:
     VJassParseError();
-    VJassParseError(int line, int column, const QString &error);
+    // TODO handle errors over multiple lines
+    VJassParseError(int line, int column, int length, const QString &error);
     VJassParseError(const VJassParseError &other);
     VJassParseError& operator=(const VJassParseError &other);
 
@@ -16,9 +16,12 @@ public:
     int getColumn() const;
     const QString& getError() const;
 
+    int getLength() const;
+
 private:
     int line;
     int column;
+    int length;
     QString error;
 };
 

@@ -22,7 +22,7 @@ public:
     int getLine() const;
     int getColumn() const;
 
-    void addError(int line, int column, const QString &error);
+    void addError(int line, int column, int length, const QString &error);
     void addError(const VJassToken &token, const QString &error);
     void addErrorAtEndOf(const VJassToken &token, const QString &error);
     void addChild(VJassAst *child);

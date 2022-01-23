@@ -6,7 +6,8 @@ AutoCompletionPopup::AutoCompletionPopup()
 {
     this->headerItem()->setText(0, tr("Auto Completion"));
     this->setMinimumSize(QSize(128, 128));
-    this->setWindowFlags(Qt::Popup);
+    //this->setWindowFlags(Qt::Popup);
+    this->setWindowFlags(Qt::FramelessWindowHint | Qt::Tool);
     this->setFocusPolicy(Qt::NoFocus);
 }
 

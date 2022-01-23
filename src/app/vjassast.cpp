@@ -90,16 +90,18 @@ int VJassAst::getColumn() const {
     return column;
 }
 
-void VJassAst::addError(int line, int column, const QString &error) {
-    this->errors.push_back(VJassParseError(line, column, error));
+void VJassAst::addError(int line, int column, int length, const QString &error) {
+    this->errors.push_back(VJassParseError(line, column, length, error));
 }
 
 void VJassAst::addError(const VJassToken &token, const QString &error) {
-    this->errors.push_back(VJassParseError(token.getLine(), token.getColumn(), error));
+    // TODO Handle multiple lines.
+    this->errors.push_back(VJassParseError(token.getLine(), token.getColumn(), token.getLength(), error));
 }
 
 void VJassAst::addErrorAtEndOf(const VJassToken &token, const QString &error) {
-    this->errors.push_back(VJassParseError(token.getLine(), token.getColumn() + token.getValue().length(), error));
+    // TODO pass the length pls
+    this->errors.push_back(VJassParseError(token.getLine(), token.getColumn() + token.getValue().length(), 1, error));
 }
 
 void VJassAst::addChild(VJassAst *child) {

@@ -1,4 +1,4 @@
-# VJass IDE
+# vJass IDE
 
 Simple standalone IDE for the scripting languages JASS and vJass of the computer game Warcraft III which provides live syntax checking and auto completion.
 

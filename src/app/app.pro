@@ -15,6 +15,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     vjassast.cpp \
+    vjasscodeelementholder.cpp \
     vjassfunction.cpp \
     vjassfunctionparameter.cpp \
     vjasskeyword.cpp \
@@ -31,6 +32,7 @@ HEADERS += \
     linenumbers.h \
     mainwindow.h \
     vjassast.h \
+    vjasscodeelementholder.h \
     vjassfunction.h \
     vjassfunctionparameter.h \
     vjasskeyword.h \

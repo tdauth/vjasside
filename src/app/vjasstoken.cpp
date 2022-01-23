@@ -3452,15 +3452,25 @@ VJassToken::Type VJassToken::getType() const {
     return type;
 }
 
-bool VJassToken::isValidType() const {
-    QSet<QString> standardTypes;
-    // TODO parse natives instead of adding them here
-    standardTypes.insert("integer");
-    standardTypes.insert("real");
-    standardTypes.insert("boolean");
-    standardTypes.insert("unit");
+int VJassToken::getLength() const {
+    return getValueLength();
+}
 
-    return standardTypes.contains(getValue());
+bool VJassToken::highlight() const {
+    return getType() != VJassToken::LineBreak
+        && getType() != VJassToken::WhiteSpace
+        && getType() != VJassToken::Operator
+        && getType() != VJassToken::LeftBracket
+        && getType() != VJassToken::RightBracket
+        && getType() != VJassToken::LeftSquareBracket
+        && getType() != VJassToken::RightSquareBracket
+        && getType() != VJassToken::Separator
+        && getType() != VJassToken::Unknown
+        && (getType() != VJassToken::Text || isCommonJType() || isCommonJNative() || isCommonJConstant());
+}
+
+bool VJassToken::isValidType() const {
+    return isCommonJType();
 }
 
 bool VJassToken::isValidIdentifier() const {

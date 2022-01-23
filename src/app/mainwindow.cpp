@@ -5,6 +5,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "vjassscanner.h"
+#include "vjasscodeelementholder.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,12 +15,14 @@ MainWindow::MainWindow(QWidget *parent)
     , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
     , scanAndParseInput(nullptr)
     , scanAndParseResults(nullptr)
+    , scanAndParsePaused(0)
 {
     ui->setupUi(this);
 
     connect(ui->actionNew, &QAction::triggered, this, &MainWindow::newFile);
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile);
     connect(ui->actionSaveAs, &QAction::triggered, this, &MainWindow::saveAs);
+    connect(ui->actionClose, &QAction::triggered, this, &MainWindow::closeFile);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
     connect(ui->actionLineNumbers, &QAction::changed, this, &MainWindow::updateLineNumbersView);
@@ -68,30 +71,41 @@ MainWindow::MainWindow(QWidget *parent)
                 while (true) {
                     //qDebug() << "Retrieving possible scan and parse input text from thread";
 
-                    QString *text = this->scanAndParseInput.fetchAndStoreAcquire(nullptr);
+                    if (this->scanAndParsePaused.loadAcquire() == 0) {
+                        QString *text = this->scanAndParseInput.fetchAndStoreAcquire(nullptr);
 
-                    if (text != nullptr) {
-                        //qDebug() << "Got scan and parse input text";
+                        if (text != nullptr) {
+                            //qDebug() << "Got scan and parse input text";
 
-                        QString input = QString(*text);
-                        input.detach(); // avoid memory issues by creating a real deep copy
-                        // discard the transfered text
-                        delete text;
-                        text = nullptr;
+                            QString input = QString(*text);
+                            input.detach(); // avoid memory issues by creating a real deep copy
+                            // discard the transfered text
+                            delete text;
+                            text = nullptr;
 
-                        // TODO Allow interrupting by changing scanAndParseInput. Maybe we have to kill the thread and restart it which is also quite expensive.
-                        QList<VJassToken> tokens = scanner.scan(input, true);
-                        VJassAst *ast = parser.parse(tokens);
-                        ScanAndParseResults *results = new ScanAndParseResults(std::move(tokens), ast);
+                            // TODO Allow interrupting by changing scanAndParseInput. Maybe we have to kill the thread and restart it which is also quite expensive.
+                            QList<VJassToken> tokens = scanner.scan(input, true);
+                            VJassAst *ast = parser.parse(tokens);
+                            qDebug() << "Tokens after scanning" << tokens.size();
+                            ScanAndParseResults *results = new ScanAndParseResults(std::move(tokens), ast);
 
-                        // by the end there could be new input and we have to start again
-                        if (this->scanAndParseInput.loadAcquire() == nullptr) {
-                            //qDebug() << "Finished scanning and parsing and storing it";
-                            this->scanAndParseResults.storeRelease(results);
+                            if (this->scanAndParsePaused.loadAcquire() == 0) {
+                                // by the end there could be new input and we have to start again
+                                if (this->scanAndParseInput.loadAcquire() == nullptr) {
+                                    //qDebug() << "Finished scanning and parsing and storing it";
+                                    this->scanAndParseResults.storeRelease(results);
+                                } else {
+                                    //qDebug() << "Finished scanning and parsing but discarding it";
+                                    delete results;
+                                    results = nullptr;
+                                }
+                            } else {
+                                //qDebug() << "Finished scanning and parsing but discarding it";
+                                delete results;
+                                results = nullptr;
+                            }
                         } else {
-                            //qDebug() << "Finished scanning and parsing but discarding it";
-                            delete results;
-                            results = nullptr;
+                            QThread::sleep(2);
                         }
                     } else {
                         //qDebug() << "Waiting for scan and parse input text in thread";
@@ -106,7 +120,9 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+    ui = nullptr;
     delete popup;
+    popup = nullptr;
 
     killTimer(timerIdCheck);
 
@@ -117,6 +133,7 @@ MainWindow::~MainWindow()
     scanAndParseThread->exit(0);
     scanAndParseThread->wait();
     delete scanAndParseThread;
+    scanAndParseThread = nullptr;
 }
 
 void MainWindow::newFile() {
@@ -190,6 +207,20 @@ bool MainWindow::saveAs() {
     return false;
 }
 
+void MainWindow::closeFile() {
+    if (documentHasChanged) {
+        if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
+            if (saveAs()) {
+                ui->textEdit->clear();
+            }
+        } else {
+            ui->textEdit->clear();
+        }
+    } else {
+        ui->textEdit->clear();
+    }
+}
+
 void MainWindow::quit() {
     if (documentHasChanged) {
         if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
@@ -204,9 +235,37 @@ void MainWindow::quit() {
     }
 }
 
-void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
+namespace {
+
+inline void applyNormalFormat(QTextCharFormat &textCharFormat) {
+    textCharFormat.setBackground(Qt::white);
+    textCharFormat.setForeground(Qt::black);
+    textCharFormat.setFontWeight(QFont::Normal);
+    textCharFormat.setUnderlineColor(Qt::red);
+    textCharFormat.setUnderlineStyle(QTextCharFormat::NoUnderline);
+    textCharFormat.setFontItalic(false);
+    textCharFormat.setFontWeight(QFont::Normal);
+}
+
+inline QTextCharFormat getNormalFormat() {
+    // reset formatting for upcoming text
+    QTextCharFormat fmtNormal;
+    applyNormalFormat(fmtNormal);
+
+    return fmtNormal;
+}
+
+}
+
+/**
+ * @brief This is one of the most important methods since it does not run concurrently and hence blocks the GUI. It has to be as fast as possible to highlight all code elements.
+ *
+ * @param codeElementHolder Contains the presorted code elements to be highlighted.
+ */
+void MainWindow::highlightTokensAndAst(const VJassCodeElementHolder &codeElementHolder, bool checkSyntax) {
     // TODO this method is slow as hell! Improve its speed! Probably too many tokens!
-    qDebug() << "Beginning highlighting tokens with tokens size:" << tokens.size();
+    // TODO We could try to format a text edit and replace our text edit by the highlighting thread.
+    qDebug() << "Beginning highlighting code elements with elements size:" << codeElementHolder.getFormattedLocations().size();
     QElapsedTimer timer;
     timer.start();
 
@@ -214,161 +273,35 @@ void MainWindow::highlightTokens(const QList<VJassToken> &tokens) {
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
-    QTextCharFormat fmtNormal;
-    fmtNormal.setBackground(Qt::white);
-    fmtNormal.setFontWeight(QFont::Normal);
+    // directly iterating through all entries is the fastest way
+    for (auto iterator = codeElementHolder.getFormattedLocations().constKeyValueBegin(); iterator != codeElementHolder.getFormattedLocations().constKeyValueEnd(); ++iterator) {
+        const VJassCodeElementHolder::Location &location = iterator->first;
+        const VJassCodeElementHolder::CustomTextCharFormat &customTextCharFormat = iterator->second;
 
-    QTextCursor cursor(ui->textEdit->document());
-    // start at the beginning of the document
-    cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
+        // move a cursor to the character
+        QTextCursor cursor(ui->textEdit->document());
+        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
+        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);
 
-    int line = 0;
-    int column = 0;
+        // get the number of characters of the same format and format all
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
+        QTextCharFormat fmt = getNormalFormat();
+        customTextCharFormat.applyToTextCharFormat(fmt, checkSyntax);
+        cursor.setCharFormat(fmt);
 
-    for (const VJassToken &token : tokens) {
-        // only hightlight certain tokens at all
-        if (token.getType() != VJassToken::WhiteSpace && token.getType() != VJassToken::LineBreak) {
-            // move to token
-            const int lines = token.getLine() - line;
-            int columns = 0;
-
-            if (lines > 0) {
-                cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::KeepAnchor);
-                cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lines);
-                column = token.getColumn();
-                columns = token.getColumn();
-                cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, columns);
-                //qDebug() << "Moving to the start of the line";
-                //qDebug() << "Moving down" << lines << "lines.";
-            } else {
-                columns = token.getColumn() - column;
-                cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, columns);
-                //qDebug() << "Moving to the right" << column << "columns.";
-            }
-
-            //qDebug() << "After moving selection to token to format normal, selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-            if (lines > 0 || columns > 0) {
-                // format normal until here since it might be some space without any tokens
-                cursor.setCharFormat(fmtNormal);
-                cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
-            }
-
-            //qDebug() << "After moving selection to token, selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-            // specify the format for the token itself
-            QTextCharFormat fmt;
-
-            // formats are taken from https://github.com/tdauth/syntaxhighlightings/blob/master/Kate/vjass.xml
-            if (token.isValidKeyword()) {
-                fmt.setForeground(Qt::black);
-                fmt.setFontWeight(QFont::Bold);
-            } else if (token.getType() == VJassToken::Comment) {
-                fmt.setForeground(Qt::gray);
-                fmt.setFontItalic(true);
-            } else if (token.getType() == VJassToken::BooleanLiteral) {
-                fmt.setForeground(Qt::blue);
-            } else if (token.getType() == VJassToken::RawCodeLiteral || token.getType() == VJassToken::IntegerLiteral || token.getType() == VJassToken::RealLiteral) {
-                fmt.setForeground(Qt::darkYellow);
-            } else if (token.getType() == VJassToken::Text) {
-                // Make a quick check for the symbol from hash sets of standard types and functions so we have these highlighted even without syntax checking
-                if (token.isCommonJType()) {
-                    fmt.setForeground(Qt::blue);
-                } else if (token.isCommonJNative()) {
-                    fmt.setForeground(QColor(0xba55d3));
-                    fmt.setFontWeight(QFont::Bold);
-                } else if (token.isCommonJConstant()) {
-                    fmt.setForeground(QColor(0xff7f50));
-                    fmt.setFontItalic(true);
-                } else {
-                    fmt = fmtNormal;
-                }
-            } else {
-                fmt = fmtNormal;
-            }
-
-            //qDebug() << "Before selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-            // move to the token's end but keep the selection and format it
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, token.getValueLength());
-            cursor.setCharFormat(fmt);
-            // move anchor to the end
-            cursor.setPosition(cursor.position(), QTextCursor::MoveAnchor);
-
-            //qDebug() << "Token:" << token.getValue() << "with line:" << token.getLine() << " and column:" << token.getColumn() << "and token length:" << token.getValue().length();
-            //qDebug() << "After selection start:" << cursor.selectionStart() << "and selection end" << cursor.selectionEnd();
-
-            // TODO set properly if the token contains line breaks
-            // update current line and column
-            line = token.getLine();
-            column = token.getColumn() + token.getValue().length();
-        }
+        // reset selecting and reset format, otherwise moving the cursor might reformat anything
+        cursor.clearSelection();
+        cursor.setCharFormat(getNormalFormat());
     }
 
     // reset formatting for upcoming text
-    ui->textEdit->setCurrentCharFormat(fmtNormal);
+    ui->textEdit->setCurrentCharFormat(getNormalFormat());
 
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
-    qDebug() << "Ending highlighting tokens with tokens size:" << tokens.size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
+    qDebug() << "Ending highlighting code elements with elements size:" << codeElementHolder.getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
 }
-
-void MainWindow::highlightAst(VJassAst *ast) {
-    // TODO Maybe we can highlight tokens and AST together in one single function going through all characters.
-    qDebug() << "AST size:" << ast->getChildren().size();
-    QList<VJassParseError> parseErrors = ast->getAllParseErrors();
-
-    // make sure no slots are triggered by this to prevent endless recursions
-    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-
-    QTextCursor cursor(ui->textEdit->document());
-    // start at the beginning of the document
-    cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
-
-    int line = 0;
-    int column = 0;
-
-    // make sure that they are handled in their correct order in the document
-    for (const VJassParseError &parseError : parseErrors) {
-        // move to token
-        const int lines = parseError.getLine() - line;
-        int columns = 0;
-
-        if (lines > 0) {
-            cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
-            cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, lines);
-            column = parseError.getColumn();
-            columns = parseError.getColumn();
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, columns);
-            //qDebug() << "Moving to the start of the line";
-            //qDebug() << "Moving down" << lines << "lines.";
-        } else {
-            columns = parseError.getColumn() - column;
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, columns);
-            //qDebug() << "Moving to the right" << column << "columns.";
-        }
-
-        const int errorLength = parseError.getError().length();
-
-        // handle every character one by one to keep the current format
-        for (int i = cursor.position(); i < errorLength; i++) {
-            QTextCharFormat currentFormat = cursor.charFormat();
-            // specify the format for syntax errors
-            currentFormat.setUnderlineColor(Qt::red);
-            currentFormat.setUnderlineStyle(QTextCharFormat::SpellCheckUnderline);
-            cursor.setCharFormat(currentFormat);
-            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, 1);
-        }
-
-        // TODO set properly if the token contains line breaks
-        // update current line and column
-        line = parseError.getLine();
-        column = parseError.getColumn() + parseError.getError().length();
-    }
-
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-}
-
 
 void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
     if (item->data(Qt::UserRole).isValid() && item->data(Qt::UserRole).canConvert<QPoint>()) {
@@ -430,7 +363,7 @@ void MainWindow::updateLineNumbers() {
     const int startLine = startCursor.blockNumber();
     const int visibleLines = bottomCursor.blockNumber() - startCursor.blockNumber() + 1;
 
-    qDebug() << "Visible lines" << visibleLines << "starting at" << startLine;
+    //qDebug() << "Visible lines" << visibleLines << "starting at" << startLine;
 
     QList<qreal> lineHeights;
 
@@ -488,7 +421,7 @@ void MainWindow::restartTimer() {
     QString text = ui->textEdit->toPlainText();
     text.detach();
 
-    qDebug() << "Storing text with length" << text.length() << "for the thread and starting user input timer";
+    //qDebug() << "Storing text with length" << text.length() << "for the thread and starting user input timer";
 
     //qassert(text.isDetached());
     scanAndParseInput.storeRelease(new QString(text));
@@ -524,6 +457,14 @@ void MainWindow::updateSelectedLines() {
     const int currentLine = ui->textEdit->textCursor().blockNumber();
 
     statusBar()->showMessage(tr("Column: %1, Line: %2").arg(currentColumn + 1).arg(currentLine + 1));
+}
+
+void MainWindow::pauseParserThread() {
+    scanAndParsePaused.storeRelease(1);
+}
+
+void MainWindow::resumeParserThread() {
+    scanAndParsePaused.storeRelease(0);
 }
 
 void MainWindow::clearAllHighLighting() {
@@ -562,7 +503,7 @@ void MainWindow::timerEvent(QTimerEvent *event) {
             if (checkSyntax || autoComplete || highlight) {
                 if (highlight) {
                     qDebug() << "Highlight!";
-                    highlightTokens(scanAndParseResults->tokens);
+                    highlightTokensAndAst(scanAndParseResults->vjassCodeElementHolder, checkSyntax);
                 }
 
                 if (checkSyntax || autoComplete) {
@@ -581,11 +522,6 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                         ui->tabWidget->setTabText(0, tr("0 Syntax Errors"));
                     } else {
                         ui->tabWidget->setTabText(0, tr("%n Syntax Errors", "%n Syntax Error", parseErrors.length()));
-                    }
-
-                    if (highlight) {
-                        // TODO highlight the AST together with the tokens in one single function to improve the performance and the highlighting of Qt.
-                        highlightAst(scanAndParseResults->ast);
                     }
 
                     if (autoComplete && scanAndParseResults->ast->getCodeCompletionSuggestions().size() > 0) {
