@@ -22,6 +22,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionSaveAs, &QAction::triggered, this, &MainWindow::saveAs);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
+    connect(ui->actionLineNumbers, &QAction::changed, this, &MainWindow::updateLineNumbersView);
+    connect(ui->actionShowWhiteSpaces, &QAction::changed, this, &MainWindow::showWhiteSpaces);
+
     connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::updateSyntaxErrorsWithAutoComplete);
     // trigger a restart so the result is updated even if the text has not changed
     connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::restartTimer);
@@ -35,9 +38,27 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
+    // whenever the user changes the view we have to update the line numbers
+    connect(ui->textEdit->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
+    connect(ui->textEdit->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
+
+    connect(ui->textEdit, &QTextEdit::cursorPositionChanged, this, &MainWindow::updateSelectedLines);
+
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
     connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outputListItemDoubleClicked);
+
+    // initial line
+    // move cursor to start to edit the document
+    ui->textEdit->setFocus();
+    QTextCursor startCursor = ui->textEdit->textCursor();
+    startCursor.movePosition(QTextCursor::Start);
+    startCursor.beginEditBlock();
+    startCursor.endEditBlock();
+    ui->textEdit->setTextCursor(startCursor);
+
+    updateLineNumbersView();
+    updateLineNumbers();
 
     scanAndParseThread = QThread::create([this]() {
                 VJassScanner scanner;
@@ -45,12 +66,12 @@ MainWindow::MainWindow(QWidget *parent)
 
                 // consume the text forever and scan and parse it
                 while (true) {
-                    qDebug() << "Retrieving possible scan and parse input text from thread";
+                    //qDebug() << "Retrieving possible scan and parse input text from thread";
 
                     QString *text = this->scanAndParseInput.fetchAndStoreAcquire(nullptr);
 
                     if (text != nullptr) {
-                        qDebug() << "Got scan and parse input text";
+                        //qDebug() << "Got scan and parse input text";
 
                         QString input = QString(*text);
                         input.detach(); // avoid memory issues by creating a real deep copy
@@ -65,15 +86,15 @@ MainWindow::MainWindow(QWidget *parent)
 
                         // by the end there could be new input and we have to start again
                         if (this->scanAndParseInput.loadAcquire() == nullptr) {
-                            qDebug() << "Finished scanning and parsing and storing it";
+                            //qDebug() << "Finished scanning and parsing and storing it";
                             this->scanAndParseResults.storeRelease(results);
                         } else {
-                            qDebug() << "Finished scanning and parsing but discarding it";
+                            //qDebug() << "Finished scanning and parsing but discarding it";
                             delete results;
                             results = nullptr;
                         }
                     } else {
-                        qDebug() << "Waiting for scan and parse input text in thread";
+                        //qDebug() << "Waiting for scan and parse input text in thread";
                         QThread::sleep(2);
                     }
                 }
@@ -175,6 +196,8 @@ void MainWindow::quit() {
             if (saveAs()) {
                 this->close();
             }
+        } else {
+            this->close();
         }
     } else {
         this->close();
@@ -379,6 +402,50 @@ void MainWindow::updateSyntaxErrorsWithAutoComplete() {
     updateSyntaxErrors(ui->actionEnableSyntaxCheck->isChecked(), true, ui->actionEnableSyntaxHighlighting->isChecked());
 }
 
+void MainWindow::updateLineNumbersView() {
+    ui->lineNumbersWidget->setVisible(ui->actionLineNumbers->isChecked());
+    updateLineNumbers();
+}
+
+void MainWindow::showWhiteSpaces() {
+    QTextOption option;
+
+    if (ui->actionShowWhiteSpaces->isChecked()) {
+        option.setFlags(QTextOption::ShowLineAndParagraphSeparators | QTextOption::ShowTabsAndSpaces);
+    } else {
+        option.setFlags(option.flags() & QTextOption::ShowLineAndParagraphSeparators & QTextOption::ShowTabsAndSpaces);
+    }
+
+    ui->textEdit->document()->setDefaultTextOption(option);
+}
+
+void MainWindow::updateLineNumbers() {
+    QTextCursor startCursor = ui->textEdit->cursorForPosition(QPoint(0, 0));
+    //const int start_pos = startCursor.position();
+    const QPoint bottom_right(ui->textEdit->viewport()->width() - 1, ui->textEdit->viewport()->height() - 1);
+    //const QPoint bottom_right(ui->textEdit->viewport()->width(), ui->textEdit->viewport()->height());
+    QTextCursor bottomCursor = ui->textEdit->cursorForPosition(bottom_right);
+    //const int end_pos = ui->textEdit->cursorForPosition(bottom_right).position();
+
+    const int startLine = startCursor.blockNumber();
+    const int visibleLines = bottomCursor.blockNumber() - startCursor.blockNumber() + 1;
+
+    qDebug() << "Visible lines" << visibleLines << "starting at" << startLine;
+
+    QList<qreal> lineHeights;
+
+    for (int i = 0; i < visibleLines; i++) {
+        const qreal lineHeight = ui->textEdit->document()->documentLayout()->blockBoundingRect(startCursor.block()).height(); // TODO is 0 before anything happens
+        lineHeights.push_back(qMax<qreal>(16, lineHeight)); // since it can be set a min height
+        //lineHeights.push_back(startCursor.blockFormat().lineHeight());
+        //lineHeights.push_back(startCursor.charFormat().font().pointSizeF());
+        startCursor.movePosition(QTextCursor::Down);
+    }
+
+    ui->lineNumbersWidget->setLineNumbers(startLine, visibleLines, lineHeights);
+    updateSelectedLines();
+}
+
 void MainWindow::clickPopupItem(const QModelIndex &index) {
     const QString &keyword = index.data().toString();
 
@@ -434,16 +501,7 @@ void MainWindow::restartTimer() {
 void MainWindow::documentChanges() {
     documentHasChanged = true;
     updateWindowTitle();
-
-    const QTextCursor startCursor = ui->textEdit->cursorForPosition(QPoint(0, 0));
-    //const int start_pos = startCursor.position();
-    const QPoint bottom_right(ui->textEdit->viewport()->width() - 1, ui->textEdit->viewport()->height() - 1);
-    const QTextCursor bottomCursor = ui->textEdit->cursorForPosition(bottom_right);
-    //const int end_pos = ui->textEdit->cursorForPosition(bottom_right).position();
-
-    const int visibleLines = bottomCursor.blockNumber() - startCursor.blockNumber();
-
-    qDebug() << "Visible lines" << visibleLines;
+    updateLineNumbers();
 }
 
 void MainWindow::updateWindowTitle() {
@@ -452,6 +510,20 @@ void MainWindow::updateWindowTitle() {
     } else {
         setWindowTitle(tr("Baradé's vJass IDE"));
     }
+}
+
+void MainWindow::updateSelectedLines() {
+    const int selectionStart = ui->textEdit->textCursor().selectionStart();
+    const int selectionEnd = ui->textEdit->textCursor().selectionEnd();
+    const int lineStart = ui->textEdit->textCursor().document()->findBlock(selectionStart).blockNumber();
+    const int lineEnd = ui->textEdit->textCursor().document()->findBlock(selectionEnd).blockNumber();
+
+    ui->lineNumbersWidget->updateSelectedLines(lineStart, lineEnd);
+
+    const int currentColumn = ui->textEdit->textCursor().positionInBlock();
+    const int currentLine = ui->textEdit->textCursor().blockNumber();
+
+    statusBar()->showMessage(tr("Column: %1, Line: %2").arg(currentColumn + 1).arg(currentLine + 1));
 }
 
 void MainWindow::clearAllHighLighting() {
@@ -474,7 +546,7 @@ void MainWindow::timerEvent(QTimerEvent *event) {
     if (event->timerId() == timerId) {
         timerId = 0;
     } else if (timerId == 0 && event->timerId() == timerIdCheck) {
-        qDebug() << "Checking scan and parse result";
+        //qDebug() << "Checking scan and parse result";
 
         ScanAndParseResults *scanAndParseResults = this->scanAndParseResults.fetchAndStoreAcquire(nullptr);
 
@@ -545,4 +617,10 @@ void MainWindow::timerEvent(QTimerEvent *event) {
             scanAndParseResults = nullptr;
         }
     }
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event) {
+    updateLineNumbers();
+
+    QMainWindow::resizeEvent(event);
 }

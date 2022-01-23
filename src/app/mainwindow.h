@@ -34,6 +34,10 @@ public slots:
     void updateSyntaxErrorsOnly();
     void updateSyntaxErrorsWithAutoComplete();
 
+    void updateLineNumbersView();
+    void showWhiteSpaces();
+    void updateLineNumbers();
+
     void clickPopupItem(const QModelIndex &index);
 
     void aboutDialog();
@@ -42,6 +46,8 @@ public slots:
     void documentChanges();
 
     void updateWindowTitle();
+
+    void updateSelectedLines();
 
 private slots:
     void highlightTokens(const QList<VJassToken> &tokens);
@@ -52,6 +58,7 @@ private slots:
 
 protected:
     virtual void timerEvent(QTimerEvent *event) override;
+    virtual void resizeEvent(QResizeEvent *event) override;
 
 private:
     Ui::MainWindow *ui;

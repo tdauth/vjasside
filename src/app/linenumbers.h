@@ -15,6 +15,10 @@ public:
     LineNumbers(QWidget *parent);
     virtual ~LineNumbers();
 
+public slots:
+    void setLineNumbers(int start, int lineNumbers, const QList<qreal> &lineHeights);
+    void updateSelectedLines(int lineStart, int lineEnd);
+
 private:
     Ui::LineNumbers *ui;
 };

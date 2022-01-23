@@ -55,6 +55,18 @@
        <height>16777215</height>
       </size>
      </property>
+     <property name="verticalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy">
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="autoScroll">
+      <bool>false</bool>
+     </property>
+     <property name="uniformItemSizes">
+      <bool>false</bool>
+     </property>
     </widget>
    </item>
   </layout>
