@@ -3,11 +3,11 @@ TEMPLATE = subdirs
 SUBDIRS = \
           testparser \
           testscanner \
-          testcodeelementholder \
+          testhighlightinfo \
           testmainwindow
 
 # where to find the sub projects - give the folders
 testparser.subdir = testparser
 testscanner.subdir = testscanner # relative paths
-testcodeelementholder.subdir = testcodeelementholder
+testhighlightinfo.subdir = testhighlightinfo
 testmainwindow.subdir = testmainwindow

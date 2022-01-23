@@ -5,7 +5,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "vjassscanner.h"
-#include "vjasscodeelementholder.h"
+#include "highlightinfo.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -262,7 +262,7 @@ inline QTextCharFormat getNormalFormat() {
  *
  * @param codeElementHolder Contains the presorted code elements to be highlighted.
  */
-void MainWindow::highlightTokensAndAst(const VJassCodeElementHolder &codeElementHolder, bool checkSyntax) {
+void MainWindow::highlightTokensAndAst(const HighLightInfo &codeElementHolder, bool checkSyntax) {
     // TODO this method is slow as hell! Improve its speed! Probably too many tokens!
     // TODO We could try to format a text edit and replace our text edit by the highlighting thread.
     qDebug() << "Beginning highlighting code elements with elements size:" << codeElementHolder.getFormattedLocations().size();
@@ -275,8 +275,8 @@ void MainWindow::highlightTokensAndAst(const VJassCodeElementHolder &codeElement
 
     // directly iterating through all entries is the fastest way
     for (auto iterator = codeElementHolder.getFormattedLocations().constKeyValueBegin(); iterator != codeElementHolder.getFormattedLocations().constKeyValueEnd(); ++iterator) {
-        const VJassCodeElementHolder::Location &location = iterator->first;
-        const VJassCodeElementHolder::CustomTextCharFormat &customTextCharFormat = iterator->second;
+        const HighLightInfo::Location &location = iterator->first;
+        const HighLightInfo::CustomTextCharFormat &customTextCharFormat = iterator->second;
 
         // move a cursor to the character
         QTextCursor cursor(ui->textEdit->document());

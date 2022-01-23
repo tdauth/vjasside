@@ -12,6 +12,20 @@ void TestScanner::canScanFunction()
     QCOMPARE(tokens.size(), 8);
 }
 
+void TestScanner::canScanNativesFromCommonJ() {
+    /*
+     native GroupEnumUnitsInRangeOfLocCounted    takes group whichGroup, location whichLocation, real radius, boolexpr filter, integer countLimit returns nothing
+     native GroupEnumUnitsSelected               takes group whichGroup, player whichPlayer, boolexpr filter returns nothing
+     */
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens = scanner.scan(
+        QString("native GroupEnumUnitsInRangeOfLocCounted    takes group whichGroup, location whichLocation, real radius, boolexpr filter, integer countLimit returns nothing\n")
+        + "native GroupEnumUnitsSelected               takes group whichGroup, player whichPlayer, boolexpr filter returns nothing");
+
+    QCOMPARE(tokens.size(), 33);
+}
+
 void TestScanner::canScanCommonJ() {
     QFile f("wc3reforged/common.j");
 
@@ -29,14 +43,14 @@ void TestScanner::canScanCommonJ() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 57546);
+    QCOMPARE(tokens.size(), 57321);
     QCOMPARE(input.size(), 355533);
 
     QBENCHMARK {
         tokens = scanner.scan(input, true);
     }
 
-    QCOMPARE(tokens.size(), 35810);
+    QCOMPARE(tokens.size(), 35585);
     QCOMPARE(input.size(), 355533);
 }
 

@@ -3,7 +3,7 @@
 #include "../../app/mainwindow.h"
 #include "../../app/vjassscanner.h"
 #include "../../app/vjassparser.h"
-#include "../../app/vjasscodeelementholder.h"
+#include "../../app/highlightinfo.h"
 #include "testmainwindow.h"
 
 void TestMainWindow::canHighlight() {
@@ -25,7 +25,7 @@ void TestMainWindow::canHighlight() {
     VJassParser parser;
     VJassAst *ast = parser.parse(tokens);
 
-    VJassCodeElementHolder codeElementHolder(tokens, ast);
+    HighLightInfo codeElementHolder(tokens, ast);
 
     MainWindow mainWindow;
     mainWindow.show();

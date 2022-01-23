@@ -75,7 +75,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 const int length = j - i;
 
-                //qDebug() << "Line comment with length" << length;
+                qDebug() << "Line comment with length" << length;
 
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Comment));
 
@@ -214,6 +214,14 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 const int length = j - i;
 
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::StringLiteral));
+
+                column += length;
+                i += length;
+            // EscapeLiteral not inside of a string
+            } else if (currentContent.startsWith("\\")) {
+                const int length = 1;
+
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::EscapeLiteral));
 
                 column += length;
                 i += length;

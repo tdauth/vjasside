@@ -1,8 +1,8 @@
 #include <QtCore>
 
-#include "vjasscodeelementholder.h"
+#include "highlightinfo.h"
 
-VJassCodeElementHolder::VJassCodeElementHolder(const QList<VJassToken> &tokens, VJassAst *ast)
+HighLightInfo::HighLightInfo(const QList<VJassToken> &tokens, VJassAst *ast)
 {
     qDebug() << "Getting tokens" << tokens.size();
 
@@ -76,7 +76,7 @@ VJassCodeElementHolder::VJassCodeElementHolder(const QList<VJassToken> &tokens, 
     }
 }
 
-void VJassCodeElementHolder::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat &fmt, bool checkSyntax) const {
+void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat &fmt, bool checkSyntax) const {
     //qDebug() << "Applying custom format in line" << line << "and column" << column;
 
     if (syntaxError && checkSyntax) {
@@ -101,11 +101,11 @@ void VJassCodeElementHolder::CustomTextCharFormat::applyToTextCharFormat(QTextCh
     }
 }
 
-const QMap<VJassCodeElementHolder::Location, VJassCodeElementHolder::CustomTextCharFormat>& VJassCodeElementHolder::getFormattedLocations() const {
+const QMap<HighLightInfo::Location, HighLightInfo::CustomTextCharFormat>& HighLightInfo::getFormattedLocations() const {
     return customTextCharFormats;
 }
 
-VJassCodeElementHolder::CustomTextCharFormat& VJassCodeElementHolder::getCustomTextCharFormat(int line, int column) {
+HighLightInfo::CustomTextCharFormat& HighLightInfo::getCustomTextCharFormat(int line, int column) {
     const Location key = Location(line, column);
 
     if (!customTextCharFormats.contains(key)) {

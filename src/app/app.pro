@@ -11,11 +11,11 @@ CONFIG += no_testcase_installs
 
 SOURCES += \
     autocompletionpopup.cpp \
+    highlightinfo.cpp \
     linenumbers.cpp \
     main.cpp \
     mainwindow.cpp \
     vjassast.cpp \
-    vjasscodeelementholder.cpp \
     vjassfunction.cpp \
     vjassfunctionparameter.cpp \
     vjasskeyword.cpp \
@@ -29,10 +29,10 @@ SOURCES += \
 
 HEADERS += \
     autocompletionpopup.h \
+    highlightinfo.h \
     linenumbers.h \
     mainwindow.h \
     vjassast.h \
-    vjasscodeelementholder.h \
     vjassfunction.h \
     vjassfunctionparameter.h \
     vjasskeyword.h \

@@ -11,7 +11,7 @@
 
 #include "vjassparser.h"
 #include "autocompletionpopup.h"
-#include "vjasscodeelementholder.h"
+#include "highlightinfo.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -55,7 +55,7 @@ public slots:
     void resumeParserThread();
 
 private slots:
-    void highlightTokensAndAst(const VJassCodeElementHolder &codeElementHolder, bool checkSyntax);
+    void highlightTokensAndAst(const HighLightInfo &codeElementHolder, bool checkSyntax);
     void outputListItemDoubleClicked(QListWidgetItem *item);
 
     void clearAllHighLighting();
@@ -81,7 +81,7 @@ private:
     // only when this timer is not running anymore we retrieve the scan and parse results every X seconds
     // as soon as they are available we update the text edit
     struct ScanAndParseResults {
-        VJassCodeElementHolder vjassCodeElementHolder;
+        HighLightInfo vjassCodeElementHolder;
         QList<VJassToken> tokens;
         // TODO keep on stack but without heap there happens weird stuff on copying!
         VJassAst *ast;

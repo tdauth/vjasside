@@ -73,6 +73,7 @@ public:
         RealLiteral,
         RawCodeLiteral,
         StringLiteral,
+        EscapeLiteral,
         LineBreak,
         WhiteSpace,
         Separator,

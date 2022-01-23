@@ -15,12 +15,12 @@ SOURCES -= ../../app/main.cpp
 HEADERS += $$files(../../app/*.h)
 
 SOURCES += \
-    testcodeelementholder.cpp
+    testhighlightinfo.cpp
 
 # message("My sources: " + $$SOURCES)
 
 HEADERS += \
-    testcodeelementholder.h
+    testhighlightinfo.h
 
 COPIES += wc3reforgedscripts
 

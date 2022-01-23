@@ -1,10 +1,9 @@
-#ifndef VJASSCODEELEMENTHOLDER_H
-#define VJASSCODEELEMENTHOLDER_H
+#ifndef HIGHLIGHTINFO_H
+#define HIGHLIGHTINFO_H
 
 #include <QTextCharFormat>
 #include <QMap>
 
-#include "vjasscodeelement.h"
 #include "vjasstoken.h"
 #include "vjassast.h"
 
@@ -16,10 +15,10 @@
  *
  * TODO Rename to VJassHighlightInfo or something like that.
  */
-class VJassCodeElementHolder
+class HighLightInfo
 {
 public:
-    VJassCodeElementHolder(const QList<VJassToken> &tokens, VJassAst *ast);
+    HighLightInfo(const QList<VJassToken> &tokens, VJassAst *ast);
 
     struct Location {
         int line;
@@ -83,13 +82,13 @@ private:
     QMap<Location, CustomTextCharFormat> customTextCharFormats;
 };
 
-inline bool operator<(const VJassCodeElementHolder::Location &e1, const VJassCodeElementHolder::Location &e2) {
+inline bool operator<(const HighLightInfo::Location &e1, const HighLightInfo::Location &e2) {
     const int lineDiff = e2.line - e1.line;
 
     return lineDiff > 0 || (lineDiff == 0 && e2.column > e1.column);
 }
 
-inline bool operator==(const VJassCodeElementHolder::CustomTextCharFormat &e1, const VJassCodeElementHolder::CustomTextCharFormat &e2) {
+inline bool operator==(const HighLightInfo::CustomTextCharFormat &e1, const HighLightInfo::CustomTextCharFormat &e2) {
     return e1.applyForegroundColor == e2.applyForegroundColor
             && e1.foregroundColor == e2.foregroundColor
             && e1.isBold == e2.isBold
@@ -97,4 +96,4 @@ inline bool operator==(const VJassCodeElementHolder::CustomTextCharFormat &e1, c
             && e1.syntaxError == e2.syntaxError;
 }
 
-#endif // VJASSCODEELEMENTHOLDER_H
+#endif // HIGHLIGHTINFO_H
