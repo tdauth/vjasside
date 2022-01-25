@@ -79,6 +79,8 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         // store since it takes some time to get all
         parseErrors = ast->getAllParseErrors();
         // sort by line and column to show them in the correct order
+        // TODO segmentation fault when accessing the line number of a parse error!
+        /*
         std::sort(parseErrors.begin(), parseErrors.end(), [](const VJassParseError &p1, const VJassParseError &p2) {
            const int lineDiff = p1.getLine() - p2.getLine();
 
@@ -88,6 +90,7 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
                 return lineDiff;
            }
         });
+        */
     }
 
     // This is the slow method creating all the extra selections!
@@ -96,6 +99,9 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
     QElapsedTimer timer;
     timer.start();
 
+    // The text document has signals such as "cursorPositionChanged" etc. we do not need to be emitted here.
+    QSignalBlocker signalBlockerTextDocument(textDocument);
+
     for (auto iterator = customTextCharFormats.constKeyValueBegin(); iterator != customTextCharFormats.constKeyValueEnd(); ++iterator) {
         const Location &location = iterator->first;
         const CustomTextCharFormat &customTextCharFormat = iterator->second;
@@ -103,6 +109,7 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         // move a cursor to the character
         //QTextCursor cursor(textDocument);
         QTextCursor cursor(textDocument);
+        //QSignalBlocker signalBlockerTextCursor(&cursor);
         cursor.setPosition(0, QTextCursor::MoveAnchor);
         cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
         cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);

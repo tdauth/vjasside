@@ -264,7 +264,7 @@ inline QTextCharFormat getNormalFormat() {
 /**
  * @brief This is one of the most important methods since it does not run concurrently and hence blocks the GUI. It has to be as fast as possible to highlight all code elements.
  *
- * @param codeElementHolder Contains the presorted code elements to be highlighted.
+ * @param highLightInfo Contains a highlighted text document which will replace the current one.
  */
 void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax) {
     // TODO this method is slow as hell! Improve its speed! Probably too many tokens!
@@ -273,6 +273,9 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
     qDebug() << "Beginning highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size();
     QElapsedTimer timer;
     timer.start();
+
+    const int position = ui->textEdit->textCursor().position();
+    qDebug() << "Old cursor position" << position;
 
     // disable signals
     QSignalBlocker signalBlocker(ui->textEdit);
@@ -284,6 +287,13 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
 
     //ui->textEdit->setExtraSelections(extraSelections);
     ui->textEdit->setDocument(highLightInfo.getTextDocument());
+
+    // set position back to previous one and remove all formatting
+    qDebug() << "Move cursor back to position" << position;
+    QTextCursor textCursor = ui->textEdit->textCursor();
+    textCursor.setPosition(position);
+    textCursor.setCharFormat(getNormalFormat());
+    ui->textEdit->setTextCursor(textCursor);
 
     /*
     // make sure no slots are triggered by this to prevent endless recursions

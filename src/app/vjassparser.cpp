@@ -15,10 +15,10 @@ VJassParser::VJassParser()
 
 namespace {
 
-inline void suggestLineStartKeywords(bool isInFunction, const VJassToken &token, VJassAst &ast) {
+inline void suggestLineStartKeywords(bool isInFunction, bool isInGlobals, VJassAst &ast, const VJassToken *token) {
     QList<QString> keywords;
 
-    if (!isInFunction) {
+    if (!isInFunction && !isInGlobals) {
         keywords.push_back(VJassToken::KEYWORD_FUNCTION);
         keywords.push_back(VJassToken::KEYWORD_GLOBALS);
         keywords.push_back(VJassToken::KEYWORD_CONSTANT);
@@ -26,18 +26,24 @@ inline void suggestLineStartKeywords(bool isInFunction, const VJassToken &token,
         keywords.push_back("/*");
         keywords.push_back(VJassToken::KEYWORD_NATIVE);
         keywords.push_back(VJassToken::KEYWORD_TYPE);
-    } else {
+    } else if (isInFunction) {
         keywords.push_back(VJassToken::KEYWORD_ENDFUNCTION);
+    } else if (isInGlobals) {
+        keywords.push_back(VJassToken::KEYWORD_ENDGLOBALS);
     }
 
+    const int line = token == nullptr ? 0 : token->getLine();
+    const int column = token == nullptr ? 0 : token->getColumn() + token->getValue().size();
+
     for (const QString &keyword : keywords) {
-        if (keyword.startsWith(token.getValue())) {
-            VJassKeyword *functionKeyword = new VJassKeyword(token.getLine(), token.getColumn() + token.getValue().size());
+        if (token == nullptr || keyword.startsWith(token->getValue())) {
+            VJassKeyword *functionKeyword = new VJassKeyword(line, column);
             functionKeyword->setKeyword(keyword);
             ast.addCodeCompletionSuggestion(functionKeyword);
         }
     }
 }
+
 
 inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJassToken &token, VJassNative *vjassFunction, VJassAst *ast, int &i) {
     i++;
@@ -332,7 +338,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
         } else if (token.getType() == VJassToken::Unknown) {
             ast->addError(token, "Unknown symbol: " + token.getValue());
         } else if (token.getType() == VJassToken::Text) {
-            suggestLineStartKeywords(isInFunction, token, *ast);
+            suggestLineStartKeywords(isInFunction, isInGlobals, *ast, &token);
         // all keywords not handled at this point should be invalid here
         } else if (token.isValidKeyword()) {
             ast->addError(token, "Unexpected keyword: " + token.getValue());
@@ -360,37 +366,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
     // suggest auto completions in a new empty document
     if (tokens.isEmpty()) {
-        if (!isInFunction) {
-            VJassKeyword *functionKeyword = new VJassKeyword(0, 0);
-            functionKeyword->setKeyword(VJassToken::KEYWORD_FUNCTION);
-            ast->addCodeCompletionSuggestion(functionKeyword);
-
-            VJassKeyword *globalsKeyword = new VJassKeyword(0, 0);
-            globalsKeyword->setKeyword(VJassToken::KEYWORD_GLOBALS);
-            ast->addCodeCompletionSuggestion(globalsKeyword);
-
-            VJassKeyword *constantKeyword = new VJassKeyword(0, 0);
-            constantKeyword->setKeyword(VJassToken::KEYWORD_CONSTANT);
-            ast->addCodeCompletionSuggestion(constantKeyword);
-        }
-
-        VJassKeyword *commentLineKeyword = new VJassKeyword(0, 0);
-        commentLineKeyword->setKeyword("//");
-        ast->addCodeCompletionSuggestion(commentLineKeyword);
-
-        VJassKeyword *commentBlockKeyword = new VJassKeyword(0, 0);
-        commentBlockKeyword->setKeyword("/*");
-        ast->addCodeCompletionSuggestion(commentBlockKeyword);
-
-        if (!isInFunction) {
-            VJassKeyword *nativeKeyword = new VJassKeyword(0, 0);
-            nativeKeyword->setKeyword(VJassToken::KEYWORD_NATIVE);
-            ast->addCodeCompletionSuggestion(nativeKeyword);
-
-            VJassKeyword *typeKeyword = new VJassKeyword(0, 0);
-            typeKeyword->setKeyword(VJassToken::KEYWORD_TYPE);
-            ast->addCodeCompletionSuggestion(typeKeyword);
-        }
+        suggestLineStartKeywords(isInFunction, isInGlobals, *ast, nullptr);
     }
 
     return ast;
