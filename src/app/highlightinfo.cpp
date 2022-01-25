@@ -76,7 +76,18 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         }
         */
 
+        // store since it takes some time to get all
         parseErrors = ast->getAllParseErrors();
+        // sort by line and column to show them in the correct order
+        std::sort(parseErrors.begin(), parseErrors.end(), [](const VJassParseError &p1, const VJassParseError &p2) {
+           const int lineDiff = p1.getLine() - p2.getLine();
+
+           if (lineDiff == 0) {
+                return p1.getColumn() - p2.getColumn();
+           } else {
+                return lineDiff;
+           }
+        });
     }
 
     // This is the slow method creating all the extra selections!

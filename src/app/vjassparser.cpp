@@ -7,6 +7,7 @@
 #include "vjassnative.h"
 #include "vjasskeyword.h"
 #include "vjasstype.h"
+#include "vjassglobals.h"
 
 VJassParser::VJassParser()
 {
@@ -158,14 +159,18 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
 VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
     VJassAst *ast = new VJassAst(0, 0);
     bool isInFunction = false;
+    VJassFunction *currentFunction = nullptr;
     bool isInGlobals = false;
+    VJassGlobals *currentGlobals = nullptr;
 
     for (int i = 0; i < tokens.size(); i++) {
         const VJassToken &token = tokens.at(i);
+        bool wasLineBreak = false;
 
         // new line
         if (token.getType() == VJassToken::LineBreak) {
             // do nothing, just consume them
+            wasLineBreak = true;
         // type
         } else if (token.getType() == VJassToken::TypeKeyword) {
             VJassType *vjassType = new VJassType(token.getLine(), token.getColumn());
@@ -244,6 +249,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                         }
 
                         isInFunction = true;
+                        currentFunction = vjassFunction;
                         parseFunctionDeclaration(tokens, token, vjassFunction, ast, i);
 
                         ast->addChild(vjassFunction);
@@ -267,28 +273,56 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
             VJassNative *vjassNative = new VJassNative(token.getLine(), token.getColumn());
 
             if (isInFunction) {
-                vjassNative->addError(token, "Cannot declare native inside of function.");
+                vjassNative->addError(token, QObject::tr("Cannot declare native inside of function."));
+            } else if (isInGlobals) {
+                vjassNative->addError(token, QObject::tr("Cannot declare native inside of globals."));
             }
 
             parseFunctionDeclaration(tokens, token, vjassNative, ast, i);
 
             ast->addChild(vjassNative);
+        // globals
+        } else if (token.getType() == VJassToken::GlobalsKeyword) {
+            VJassGlobals *vjassGlobals = new VJassGlobals(token.getLine(), token.getColumn());
+
+            if (isInFunction) {
+                vjassGlobals->addError(token, QObject::tr("Cannot declare globals inside of function."));
+            } else if (isInGlobals) {
+                vjassGlobals->addError(token, QObject::tr("Cannot declare globals inside of globals."));
+            } else {
+                isInGlobals = true;
+                currentGlobals = vjassGlobals;
+            }
+
+            ast->addChild(vjassGlobals);
+        // endglobals
+        } else if (token.getType() == VJassToken::EndglobalsKeyword) {
+            if (!isInGlobals) {
+                ast->addError(token, QObject::tr("Unable to close globals when no globals were declared."));
+            }
+
+            isInGlobals = false;
+            currentGlobals = nullptr;
         // function
         } else if (token.getType() == VJassToken::FunctionKeyword) {
             VJassFunction *vjassFunction = new VJassFunction(token.getLine(), token.getColumn());
 
-            // TODO Depends on where it is done
+            // TODO Depends on where it is done. It can be used in expressions
             if (isInFunction) {
-                vjassFunction->addError(token, "Cannot declare function inside of function.");
+                vjassFunction->addError(token,  QObject::tr("Cannot declare function inside of function."));
+            } else if (isInGlobals) {
+                vjassFunction->addError(token, QObject::tr("Cannot declare function inside of globals."));
             }
 
             isInFunction = true;
+            currentFunction = vjassFunction;
             parseFunctionDeclaration(tokens, token, vjassFunction, ast, i);
 
             ast->addChild(vjassFunction);
         } else if (token.getType() == VJassToken::EndfunctionKeyword) {
             if (isInFunction) {
                 isInFunction = false;
+                currentFunction = nullptr;
             } else {
                 ast->addError(token, "Expected after defining a function before using: " + token.getValue());
             }
@@ -306,18 +340,20 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
         // add comments to the last AST child
         // comments might be useful attached to their declarations to give some information
-        const int commentsIndex = i + 1;
+        if (!wasLineBreak) {
+            const int commentsIndex = i + 1;
 
-        if (tokens.size() > commentsIndex) {
-            const VJassToken &commentsToken = tokens.at(commentsIndex);
-            VJassAst *child = ast->getChildren().isEmpty() ? ast : ast->getChildren().last();
+            if (tokens.size() > commentsIndex) {
+                const VJassToken &commentsToken = tokens.at(commentsIndex);
+                VJassAst *child = ast->getChildren().isEmpty() ? ast : ast->getChildren().last();
 
-            if (commentsToken.getType() != VJassToken::Comment && commentsToken.getType() != VJassToken::LineBreak) {
-                child->addError(commentsToken, QObject::tr("Expected comment or line break instead of %1").arg(commentsToken.getValue()));
-            } else if (commentsToken.getType() == VJassToken::Comment) {
-                child->addComment(commentsToken.getValue());
-            // line break
-            } else {
+                if (commentsToken.getType() != VJassToken::Comment && commentsToken.getType() != VJassToken::LineBreak) {
+                    child->addError(commentsToken, QObject::tr("Expected comment or line break instead of %1").arg(commentsToken.getValue()));
+                } else if (commentsToken.getType() == VJassToken::Comment) {
+                    child->addComment(commentsToken.getValue());
+                // line break
+                } else {
+                }
             }
         }
     }

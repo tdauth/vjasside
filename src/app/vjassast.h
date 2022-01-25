@@ -37,8 +37,8 @@ private:
     QList<VJassParseError> errors;
     QList<VJassAst*> children;
     QList<VJassAst*> codeCompletionSuggestions;
-    int line;
-    int column;
+    int line = 0;
+    int column = 0;
     QList<QString> comments;
 };
 

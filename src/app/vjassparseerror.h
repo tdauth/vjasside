@@ -19,9 +19,9 @@ public:
     int getLength() const;
 
 private:
-    int line;
-    int column;
-    int length;
+    int line = 0;
+    int column = 0;
+    int length = 0;
     QString error;
 };
 
