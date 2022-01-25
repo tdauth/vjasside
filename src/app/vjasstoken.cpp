@@ -1735,7 +1735,12 @@ const QSet<QString> VJassToken::COMMONJ_NATIVES_ALL = {
     "BlzCreateDestructableZWithSkin",
     "BlzCreateDeadDestructableWithSkin",
     "BlzCreateDeadDestructableZWithSkin",
-    "BlzGetPlayerTownHallCount"
+    "BlzGetPlayerTownHallCount",
+    "MathRound",
+    "GetPlayerHandicapReviveTime",
+    "GetPlayerHandicapDamage",
+    "SetPlayerHandicapReviveTime",
+    "SetPlayerHandicapDamage",
 };
 const QSet<QString> VJassToken::COMMONJ_CONSTANTS_ALL = {
     "FALSE",

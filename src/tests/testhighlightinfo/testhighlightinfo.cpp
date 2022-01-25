@@ -6,17 +6,18 @@
 #include "testhighlightinfo.h"
 
 void TestHighlightInfo::canHoldTokens() {
+    const QString text = "function test";
     VJassScanner scanner;
-    QList<VJassToken> tokens = scanner.scan("function test", false);
+    QList<VJassToken> tokens = scanner.scan(text, false);
 
-    HighLightInfo codeElementHolder(tokens, nullptr);
+    HighLightInfo highLightInfo(text, tokens, nullptr);
 
-    QCOMPARE(codeElementHolder.getFormattedLocations().size(), 8);
-    QVERIFY(codeElementHolder.getFormattedLocations().contains(HighLightInfo::Location(0, 0)));
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].isBold, true);
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].isItalic, false);
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].length, 7);
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, false);
+    QCOMPARE(highLightInfo.getFormattedLocations().size(), 1);
+    QVERIFY(highLightInfo.getFormattedLocations().contains(HighLightInfo::Location(0, 0)));
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isBold, true);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isItalic, false);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].length, 8);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, true);
 }
 
 void TestHighlightInfo::canHoldTokensFromCommonJ() {
@@ -24,22 +25,28 @@ void TestHighlightInfo::canHoldTokensFromCommonJ() {
      native GroupEnumUnitsInRangeOfLocCounted    takes group whichGroup, location whichLocation, real radius, boolexpr filter, integer countLimit returns nothing
      native GroupEnumUnitsSelected               takes group whichGroup, player whichPlayer, boolexpr filter returns nothing
      */
+    const QString text = QString("native GroupEnumUnitsInRangeOfLocCounted    takes group whichGroup, location whichLocation, real radius, boolexpr filter, integer countLimit returns nothing\n")
+            + "native GroupEnumUnitsSelected               takes group whichGroup, player whichPlayer, boolexpr filter returns nothing";
     VJassScanner scanner;
-    QList<VJassToken> tokens = scanner.scan(
-        QString("native GroupEnumUnitsInRangeOfLocCounted    takes group whichGroup, location whichLocation, real radius, boolexpr filter, integer countLimit returns nothing\n")
-        + "native GroupEnumUnitsSelected               takes group whichGroup, player whichPlayer, boolexpr filter returns nothing"
-    , false);
+    QList<VJassToken> tokens = scanner.scan(text, false);
 
-    HighLightInfo codeElementHolder(tokens, nullptr);
+    HighLightInfo highLightInfo(text, tokens, nullptr);
 
     // native GroupEnumUnitsInRangeOfLocCounted    takes group location real radius boolexpr integer returns nothing
     // native GroupEnumUnitsSelected               takes group player boolexpr filter returns nothing
-    QCOMPARE(codeElementHolder.getFormattedLocations().size(), 20);
-    QVERIFY(codeElementHolder.getFormattedLocations().contains(HighLightInfo::Location(0, 0)));
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].isBold, true);
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].isItalic, false);
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].length, 6); // native
-    QCOMPARE(codeElementHolder.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, true);
+    QCOMPARE(highLightInfo.getFormattedLocations().size(), 18);
+    QVERIFY(highLightInfo.getFormattedLocations().contains(HighLightInfo::Location(0, 0)));
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isBold, true);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isItalic, false);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].length, 6); // native
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, true);
+
+    // second native
+    QVERIFY(highLightInfo.getFormattedLocations().contains(HighLightInfo::Location(1, 0)));
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isBold, true);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isItalic, false);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].length, 6); // native
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, true);
 }
 
 /*

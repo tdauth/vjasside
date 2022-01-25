@@ -2,8 +2,10 @@
 
 #include "highlightinfo.h"
 
-HighLightInfo::HighLightInfo(const QList<VJassToken> &tokens, VJassAst *ast)
+HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast) : textDocument(new QTextDocument(text))
 {
+    textDocument->setDocumentLayout(new QPlainTextDocumentLayout(textDocument));
+
     qDebug() << "Getting tokens" << tokens.size();
 
     // filter for elements which need to be highlighted
@@ -73,7 +75,40 @@ HighLightInfo::HighLightInfo(const QList<VJassToken> &tokens, VJassAst *ast)
             }
         }
         */
+
+        parseErrors = ast->getAllParseErrors();
     }
+
+    // This is the slow method creating all the extra selections!
+    // TODO This is the really slow part because of the iteration with the cursors. It might take about 30 seconds or longer.
+    qDebug() << "Beginning highlighting code elements with elements size:" << getFormattedLocations().size();
+    QElapsedTimer timer;
+    timer.start();
+
+    for (auto iterator = customTextCharFormats.constKeyValueBegin(); iterator != customTextCharFormats.constKeyValueEnd(); ++iterator) {
+        const Location &location = iterator->first;
+        const CustomTextCharFormat &customTextCharFormat = iterator->second;
+
+        // move a cursor to the character
+        //QTextCursor cursor(textDocument);
+        QTextCursor cursor(textDocument);
+        cursor.setPosition(0, QTextCursor::MoveAnchor);
+        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
+        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);
+
+        // format all characters
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
+        QTextCharFormat fmt; // = getNormalFormat();
+        customTextCharFormat.applyToTextCharFormat(fmt, ast != nullptr);
+        cursor.setCharFormat(fmt); // for bold it is required that the cursor has the format
+
+        QTextEdit::ExtraSelection extraSelection;
+        extraSelection.cursor = cursor;
+        extraSelection.format = fmt;
+        extraSelections.push_back(extraSelection);
+    }
+
+    qDebug() << "Ending highlighting code elements with elements size:" << getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
 }
 
 void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat &fmt, bool checkSyntax) const {
@@ -103,6 +138,19 @@ void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat 
 
 const QMap<HighLightInfo::Location, HighLightInfo::CustomTextCharFormat>& HighLightInfo::getFormattedLocations() const {
     return customTextCharFormats;
+}
+
+QList<QTextEdit::ExtraSelection> HighLightInfo::toExtraSelections(QTextDocument *textDocument, bool checkSyntax) const {
+    // TODO use checkSyntax to remove all the underlining etc.
+    return extraSelections;
+}
+
+QTextDocument* HighLightInfo::getTextDocument() const {
+    return textDocument;
+}
+
+const QList<VJassParseError>& HighLightInfo::getParseErrors() const {
+    return parseErrors;
 }
 
 HighLightInfo::CustomTextCharFormat& HighLightInfo::getCustomTextCharFormat(int line, int column) {

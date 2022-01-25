@@ -69,14 +69,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QTextEdit" name="textEdit">
-           <property name="documentTitle">
-            <string/>
-           </property>
-           <property name="acceptRichText">
-            <bool>false</bool>
-           </property>
-          </widget>
+          <widget class="QPlainTextEdit" name="textEdit"/>
          </item>
         </layout>
        </item>

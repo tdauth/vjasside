@@ -3,6 +3,9 @@
 
 #include <QTextCharFormat>
 #include <QMap>
+#include <QTextEdit>
+#include <QPlainTextEdit>
+#include <QTextDocument>
 
 #include "vjasstoken.h"
 #include "vjassast.h"
@@ -18,7 +21,7 @@
 class HighLightInfo
 {
 public:
-    HighLightInfo(const QList<VJassToken> &tokens, VJassAst *ast);
+    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast);
 
     struct Location {
         int line;
@@ -75,11 +78,17 @@ public:
     };
 
     const QMap<Location, CustomTextCharFormat>& getFormattedLocations() const;
+    QList<QTextEdit::ExtraSelection> toExtraSelections(QTextDocument *textDocument, bool checkSyntax) const;
+    QTextDocument* getTextDocument() const;
+    const QList<VJassParseError>& getParseErrors() const;
 
 private:
     CustomTextCharFormat& getCustomTextCharFormat(int line, int column);
 
     QMap<Location, CustomTextCharFormat> customTextCharFormats;
+    QTextDocument *textDocument;
+    QList<QTextEdit::ExtraSelection> extraSelections;
+    QList<VJassParseError> parseErrors;
 };
 
 inline bool operator<(const HighLightInfo::Location &e1, const HighLightInfo::Location &e2) {

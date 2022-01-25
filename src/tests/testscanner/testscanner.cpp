@@ -24,6 +24,20 @@ void TestScanner::canScanNativesFromCommonJ() {
         + "native GroupEnumUnitsSelected               takes group whichGroup, player whichPlayer, boolexpr filter returns nothing");
 
     QCOMPARE(tokens.size(), 33);
+
+    int index = -1;
+
+    for (int i = 1; i < tokens.size() && index == -1; ++i) {
+        if (tokens.at(i).getType() == VJassToken::NativeKeyword) {
+            index = i;
+        }
+    }
+
+    QCOMPARE(index, 20);
+    QCOMPARE(tokens.at(index).getColumn(), 0);
+    QCOMPARE(tokens.at(index).getLine(), 1);
+    QCOMPARE(tokens.at(index).getValue(), "native");
+    QCOMPARE(tokens.at(index).getValueLength(), 6);
 }
 
 void TestScanner::canScanCommonJ() {

@@ -38,14 +38,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
     // whenever the user changes the text we have to wait with our highlighting and syntax check for some time to prevent blocking the GUI all the time
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
+    connect(ui->textEdit, &QPlainTextEdit::textChanged, this, &MainWindow::restartTimer);
+    connect(ui->textEdit, &QPlainTextEdit::textChanged, this, &MainWindow::documentChanges);
 
     // whenever the user changes the view we have to update the line numbers
     connect(ui->textEdit->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
     connect(ui->textEdit->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
 
-    connect(ui->textEdit, &QTextEdit::cursorPositionChanged, this, &MainWindow::updateSelectedLines);
+    connect(ui->textEdit, &QPlainTextEdit::cursorPositionChanged, this, &MainWindow::updateSelectedLines);
 
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
@@ -63,6 +63,9 @@ MainWindow::MainWindow(QWidget *parent)
     updateLineNumbersView();
     updateLineNumbers();
 
+    /*
+     * Scan, parse and prestore highlighting information concurrently to avoid blocking the GUI.
+     */
     scanAndParseThread = QThread::create([this]() {
                 VJassScanner scanner;
                 VJassParser parser;
@@ -72,6 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
                     //qDebug() << "Retrieving possible scan and parse input text from thread";
 
                     if (this->scanAndParsePaused.loadAcquire() == 0) {
+                        // consume by replacing it with an empty pointer
                         QString *text = this->scanAndParseInput.fetchAndStoreAcquire(nullptr);
 
                         if (text != nullptr) {
@@ -87,7 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
                             QList<VJassToken> tokens = scanner.scan(input, true);
                             VJassAst *ast = parser.parse(tokens);
                             qDebug() << "Tokens after scanning" << tokens.size();
-                            ScanAndParseResults *results = new ScanAndParseResults(std::move(tokens), ast);
+                            // this stores also the required highlighting information
+                            ScanAndParseResults *results = new ScanAndParseResults(input, std::move(tokens), ast);
 
                             if (this->scanAndParsePaused.loadAcquire() == 0) {
                                 // by the end there could be new input and we have to start again
@@ -173,7 +178,7 @@ void MainWindow::openFile() {
             fileDir = fileInfo.absoluteDir().path();
 
             if (f.open(QIODevice::ReadOnly)) {
-                this->ui->textEdit->setText(f.readAll());
+                this->ui->textEdit->document()->setPlainText(f.readAll());
 
                 documentHasChanged = false;
                 updateWindowTitle();
@@ -241,7 +246,6 @@ inline void applyNormalFormat(QTextCharFormat &textCharFormat) {
     textCharFormat.setBackground(Qt::white);
     textCharFormat.setForeground(Qt::black);
     textCharFormat.setFontWeight(QFont::Normal);
-    textCharFormat.setUnderlineColor(Qt::red);
     textCharFormat.setUnderlineStyle(QTextCharFormat::NoUnderline);
     textCharFormat.setFontItalic(false);
     textCharFormat.setFontWeight(QFont::Normal);
@@ -262,13 +266,26 @@ inline QTextCharFormat getNormalFormat() {
  *
  * @param codeElementHolder Contains the presorted code elements to be highlighted.
  */
-void MainWindow::highlightTokensAndAst(const HighLightInfo &codeElementHolder, bool checkSyntax) {
+void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax) {
     // TODO this method is slow as hell! Improve its speed! Probably too many tokens!
     // TODO We could try to format a text edit and replace our text edit by the highlighting thread.
-    qDebug() << "Beginning highlighting code elements with elements size:" << codeElementHolder.getFormattedLocations().size();
+    // TODO We can also use setExtraSelections(const QList<QTextEdit::ExtraSelection> &selections) or QSyntaxHighlighter for maybe faster approaches.
+    qDebug() << "Beginning highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size();
     QElapsedTimer timer;
     timer.start();
 
+    // disable signals
+    QSignalBlocker signalBlocker(ui->textEdit);
+
+    // this is the actual slow part
+    //QList<QTextEdit::ExtraSelection> extraSelections = highLightInfo.toExtraSelections(ui->textEdit->document(), checkSyntax);
+
+    //qDebug() << "Extra selections" << extraSelections.size();
+
+    //ui->textEdit->setExtraSelections(extraSelections);
+    ui->textEdit->setDocument(highLightInfo.getTextDocument());
+
+    /*
     // make sure no slots are triggered by this to prevent endless recursions
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
@@ -280,10 +297,11 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &codeElementHolder, b
 
         // move a cursor to the character
         QTextCursor cursor(ui->textEdit->document());
+        cursor.setPosition(0, QTextCursor::MoveAnchor);
         cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
         cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);
 
-        // get the number of characters of the same format and format all
+        // format all characters
         cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
         QTextCharFormat fmt = getNormalFormat();
         customTextCharFormat.applyToTextCharFormat(fmt, checkSyntax);
@@ -292,15 +310,18 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &codeElementHolder, b
         // reset selecting and reset format, otherwise moving the cursor might reformat anything
         cursor.clearSelection();
         cursor.setCharFormat(getNormalFormat());
+        ui->textEdit->setCurrentCharFormat(getNormalFormat());
     }
 
     // reset formatting for upcoming text
     ui->textEdit->setCurrentCharFormat(getNormalFormat());
 
+    // enable triggering text changes by the user again
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
+    */
 
-    qDebug() << "Ending highlighting code elements with elements size:" << codeElementHolder.getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
+    qDebug() << "Ending highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
 }
 
 void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
@@ -323,7 +344,7 @@ void MainWindow::updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool hi
     this->expectAutoComplete = autoComplete;
 
     if (!checkSyntax && !autoComplete && !highlight) {
-        clearAllHighLighting();
+        //clearAllHighLighting();
     }
 }
 
@@ -421,7 +442,7 @@ void MainWindow::restartTimer() {
     QString text = ui->textEdit->toPlainText();
     text.detach();
 
-    //qDebug() << "Storing text with length" << text.length() << "for the thread and starting user input timer";
+    qDebug() << "Storing text with length" << text.length() << "for the thread and starting user input timer";
 
     //qassert(text.isDetached());
     scanAndParseInput.storeRelease(new QString(text));
@@ -468,9 +489,10 @@ void MainWindow::resumeParserThread() {
 }
 
 void MainWindow::clearAllHighLighting() {
-    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
+    //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
+    QSignalBlocker signalBlocker(ui->textEdit);
     QTextCursor cursor(ui->textEdit->document());
     QTextCharFormat fmtNormal;
     fmtNormal.setBackground(Qt::white);
@@ -479,8 +501,8 @@ void MainWindow::clearAllHighLighting() {
     cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
     cursor.setCharFormat(fmtNormal);
 
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
+    //connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
+    //connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 }
 
 void MainWindow::timerEvent(QTimerEvent *event) {
@@ -503,13 +525,13 @@ void MainWindow::timerEvent(QTimerEvent *event) {
             if (checkSyntax || autoComplete || highlight) {
                 if (highlight) {
                     qDebug() << "Highlight!";
-                    highlightTokensAndAst(scanAndParseResults->vjassCodeElementHolder, checkSyntax);
+                    highlightTokensAndAst(scanAndParseResults->highLightInfo, checkSyntax);
                 }
 
                 if (checkSyntax || autoComplete) {
                     ui->outputListWidget->clear();
 
-                    const QList<VJassParseError> parseErrors = scanAndParseResults->ast->getAllParseErrors();
+                    const QList<VJassParseError> &parseErrors = scanAndParseResults->highLightInfo.getParseErrors();
 
                     for (const VJassParseError &parseError : parseErrors) {
                         QListWidgetItem *item = new QListWidgetItem(tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError()));

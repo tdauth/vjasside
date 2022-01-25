@@ -9,6 +9,7 @@ SOURCES -= ../app/main.cpp
 SOURCES -= ../app/mainwindow.cpp
 SOURCES -= ../app/autocompletionpopup.cpp
 SOURCES -= ../app/linenumbers.cpp
+SOURCES -= ../app/highlightinfo.cpp
 
 # message("My sources: " + $$SOURCES)
 
@@ -16,6 +17,7 @@ HEADERS += $$files(../app/*.h)
 HEADERS -= ../app/mainwindow.h
 HEADERS -= ../app/autocompletionpopup.h
 HEADERS -= ../app/linenumbers.h
+HEADERS -= ../app/highlightinfo.h
 
 SOURCES += \
     main.cpp

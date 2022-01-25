@@ -25,7 +25,7 @@ void TestMainWindow::canHighlight() {
     VJassParser parser;
     VJassAst *ast = parser.parse(tokens);
 
-    HighLightInfo codeElementHolder(tokens, ast);
+    HighLightInfo codeElementHolder(input, tokens, ast);
 
     MainWindow mainWindow;
     mainWindow.show();

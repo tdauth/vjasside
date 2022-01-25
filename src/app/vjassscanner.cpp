@@ -75,7 +75,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 const int length = j - i;
 
-                qDebug() << "Line comment with length" << length;
+                //qDebug() << "Line comment with length" << length;
 
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::Comment));
 
