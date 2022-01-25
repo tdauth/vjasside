@@ -3,6 +3,7 @@ TEMPLATE = subdirs
 SUBDIRS = \
           app \
           commandline \
+          stormlib \
           tests
 
 # where to find the sub projects - give the folders

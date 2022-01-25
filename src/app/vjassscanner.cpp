@@ -123,13 +123,13 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 i += 1;
             // boolean literal true
             } else if (currentContent.startsWith("true")) {
-                result.push_back(VJassToken(currentContent.mid(i, 4), line, column, VJassToken::BooleanLiteral));
+                result.push_back(VJassToken(currentContent.mid(i, 4), line, column, VJassToken::TrueKeyword));
 
                 column += 4;
                 i += 4;
             // boolean literal false
             } else if (currentContent.startsWith("false")) {
-                result.push_back(VJassToken(currentContent.mid(i, 5), line, column, VJassToken::BooleanLiteral));
+                result.push_back(VJassToken(currentContent.mid(i, 5), line, column, VJassToken::FalseKeyword));
 
                 column += 5;
                 i += 5;

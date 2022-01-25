@@ -27,7 +27,7 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
                 customTextCharFormat.foregroundColor = Qt::gray;
                 customTextCharFormat.isItalic = true;
                 //qDebug() << "Is comment";
-            } else if (token.getType() == VJassToken::BooleanLiteral) {
+            } else if (token.getType() == VJassToken::TrueKeyword || token.getType() == VJassToken::FalseKeyword) {
                 customTextCharFormat.applyForegroundColor = true;
                 customTextCharFormat.foregroundColor = Qt::blue;
             } else if (token.getType() == VJassToken::RawCodeLiteral || token.getType() == VJassToken::IntegerLiteral || token.getType() == VJassToken::RealLiteral) {

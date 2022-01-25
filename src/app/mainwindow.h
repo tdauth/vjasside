@@ -11,6 +11,7 @@
 
 #include "vjassparser.h"
 #include "autocompletionpopup.h"
+#include "settingsdialog.h"
 #include "highlightinfo.h"
 
 QT_BEGIN_NAMESPACE
@@ -74,6 +75,8 @@ private:
 
     bool expectAutoComplete = false;
     AutoCompletionPopup *popup;
+
+    SettingsDialog *settingsDialog;
 
     // the scanner and parser is executed in a separate thread
     // it waits for some text input to be scanned and parsed and returns it for the main window to be retrieved

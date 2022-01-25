@@ -15,7 +15,9 @@ SOURCES += \
     linenumbers.cpp \
     main.cpp \
     mainwindow.cpp \
+    settingsdialog.cpp \
     vjassast.cpp \
+    vjassexpression.cpp \
     vjassfunction.cpp \
     vjassfunctionparameter.cpp \
     vjassglobal.cpp \
@@ -34,7 +36,9 @@ HEADERS += \
     highlightinfo.h \
     linenumbers.h \
     mainwindow.h \
+    settingsdialog.h \
     vjassast.h \
+    vjassexpression.h \
     vjassfunction.h \
     vjassfunctionparameter.h \
     vjassglobal.h \
@@ -50,7 +54,8 @@ HEADERS += \
 
 FORMS += \
     linenumbers.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    settingsdialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

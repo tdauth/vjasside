@@ -29,6 +29,11 @@ const QString VJassToken::KEYWORD_TYPE = "type";
 const QString VJassToken::KEYWORD_EXTENDS = "extends";
 const QString VJassToken::KEYWORD_NATIVE = "native";
 const QString VJassToken::KEYWORD_NULL = "null";
+const QString VJassToken::KEYWORD_NOT = "not";
+const QString VJassToken::KEYWORD_AND = "and";
+const QString VJassToken::KEYWORD_OR = "or";
+const QString VJassToken::KEYWORD_TRUE = "true";
+const QString VJassToken::KEYWORD_FALSE = "false";
 
 const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_ENDFUNCTION, // match before function
@@ -53,7 +58,12 @@ const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_TYPE,
     VJassToken::KEYWORD_EXTENDS,
     VJassToken::KEYWORD_NATIVE,
-    VJassToken::KEYWORD_NULL
+    VJassToken::KEYWORD_NULL,
+    VJassToken::KEYWORD_NOT,
+    VJassToken::KEYWORD_AND,
+    VJassToken::KEYWORD_OR,
+    VJassToken::KEYWORD_TRUE,
+    VJassToken::KEYWORD_FALSE
 };
 
 const QSet<QString> VJassToken::COMMONJ_TYPES_ALL = {
@@ -3509,6 +3519,11 @@ bool VJassToken::isValidKeyword() const {
         || getType() == VJassToken::EndglobalsKeyword
         || getType() == VJassToken::ArrayKeyword
         || getType() == VJassToken::NullKeyword
+        || getType() == VJassToken::NotKeyword
+        || getType() == VJassToken::AndKeyword
+        || getType() == VJassToken::OrKeyword
+        || getType() == VJassToken::TrueKeyword
+        || getType() == VJassToken::FalseKeyword
     ;
 }
 
@@ -3559,7 +3574,12 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::ArrayKeyword;
     } else if (keyword == KEYWORD_NULL) {
         return VJassToken::NullKeyword;
+    } else if (keyword == KEYWORD_TRUE) {
+        return VJassToken::TrueKeyword;
+    } else if (keyword == KEYWORD_FALSE) {
+        return VJassToken::FalseKeyword;
     }
+
 
     Q_ASSERT(false);
 }

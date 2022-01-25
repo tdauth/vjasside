@@ -84,7 +84,7 @@
      <x>0</x>
      <y>0</y>
      <width>927</width>
-     <height>17</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -123,10 +123,17 @@
     <addaction name="actionLineNumbers"/>
     <addaction name="actionShowWhiteSpaces"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionSettings"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
    <addaction name="menuAuto_Completion"/>
    <addaction name="menuAutomaticAnalysis"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -222,6 +229,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>

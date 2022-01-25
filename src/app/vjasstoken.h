@@ -3,6 +3,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <QRegularExpression>
 
 class VJassToken
 {
@@ -31,6 +32,12 @@ public:
     const static QString KEYWORD_EXTENDS;
     const static QString KEYWORD_NATIVE;
     const static QString KEYWORD_NULL;
+    const static QString KEYWORD_NOT;
+    const static QString KEYWORD_AND;
+    const static QString KEYWORD_OR;
+    const static QString KEYWORD_TRUE;
+    const static QString KEYWORD_FALSE;
+    // For a faster access we use this list with all keywords.
     const static QStringList KEYWRODS_ALL;
 
     // keep Warcraft III's default stuff in memory to improve the performance on highlighting
@@ -64,6 +71,11 @@ public:
         EndglobalsKeyword,
         ArrayKeyword,
         NullKeyword,
+        NotKeyword,
+        AndKeyword,
+        OrKeyword,
+        TrueKeyword,
+        FalseKeyword,
         Comment,
         Operator,
         AssignmentOperator,
@@ -71,7 +83,6 @@ public:
         RightBracket,
         LeftSquareBracket,
         RightSquareBracket,
-        BooleanLiteral,
         IntegerLiteral,
         RealLiteral,
         RawCodeLiteral,

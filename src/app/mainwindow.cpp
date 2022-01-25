@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , popup(new AutoCompletionPopup)
+    , settingsDialog(new SettingsDialog(this))
     , timerId(0)
     , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
     , scanAndParseInput(nullptr)
@@ -34,6 +35,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionEnableSyntaxHighlighting, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
     connect(ui->actionEnableSyntaxCheck, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
+
+    connect(ui->actionSettings, &QAction::triggered, settingsDialog, &QDialog::show);
 
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 

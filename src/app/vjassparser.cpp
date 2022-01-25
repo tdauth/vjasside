@@ -9,6 +9,7 @@
 #include "vjasstype.h"
 #include "vjassglobals.h"
 #include "vjassglobal.h"
+#include "vjassexpression.h"
 
 VJassParser::VJassParser()
 {
@@ -161,6 +162,108 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
     }
 }
 
+/**
+ * @brief parseExpression
+ *
+ * Something like: ( ( x + y) / myFunction(10) )
+ *
+ * @param tokens
+ * @param token
+ * @param ast
+ * @param i
+ */
+inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const VJassToken &token, VJassAst *ast, int &i) {
+    VJassExpression *result = nullptr;
+    i++;
+
+    if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+        ast->addErrorAtEndOf(token, QObject::tr("Missing expression."));
+    } else {
+        const VJassToken &nextToken = tokens.at(i);
+
+        if (nextToken.getType() == VJassToken::LeftBracket) {
+            bool foundRightBracket = false;
+            int j = i + 1;
+
+            for ( ; j < tokens.size(); ++j) {
+                const VJassToken &rightBracket = tokens.at(j);
+
+                if (rightBracket.getType() == VJassToken::RightBracket) {
+                    foundRightBracket = true;
+                } else if (rightBracket.getType() == VJassToken::LineBreak) {
+                    ast->addErrorAtEndOf(nextToken, QObject::tr("Missing right bracket for left bracket."));
+
+                    break;
+                }
+            }
+
+            if (!foundRightBracket) {
+                ast->addErrorAtEndOf(nextToken, QObject::tr("Missing right bracket for left bracket."));
+            } else {
+                result = new VJassExpression(nextToken.getLine(), nextToken.getColumn()) ;
+                result->setType(VJassExpression::Brackets);
+
+                // get all expressions in between the brackets
+                if (j > i + 1) {
+                    i++;
+                    VJassAst *child = parseExpression(tokens, nextToken, result, i);
+
+                    if (child != nullptr) {
+                        result->addChild(child);
+                    } else {
+                        result->addErrorAtEndOf(nextToken, QObject::tr("Empty expression between brackets"));
+                    }
+                } else {
+                    result->addErrorAtEndOf(nextToken, QObject::tr("Empty expression between brackets"));
+                }
+            }
+        // operator
+        } else if (nextToken.getType() == VJassToken::Operator) {
+            // TODO only allow + and - as infix
+
+        // identifier
+        } else if (nextToken.getType() == VJassToken::Text) {
+
+            // TODO Look for operators
+        } else if (nextToken.getType() == VJassToken::IntegerLiteral) {
+            result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+            result->setType(VJassExpression::IntegerLiteral);
+            result->setValue(nextToken.getValue());
+
+            // TODO Look for operators
+        } else if (nextToken.getType() == VJassToken::RealLiteral) {
+            result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+            result->setType(VJassExpression::RealLiteral);
+            result->setValue(nextToken.getValue());
+
+            // TODO Look for operators
+        } else if (nextToken.getType() == VJassToken::StringLiteral) {
+            result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+            result->setType(VJassExpression::StringLiteral);
+            result->setValue(nextToken.getValue());
+
+            // TODO Look for operators
+        } else if (nextToken.getType() == VJassToken::TrueKeyword) {
+            result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+            result->setType(VJassExpression::True);
+            result->setValue(nextToken.getValue());
+
+            // TODO Look for operators
+        } else if (nextToken.getType() == VJassToken::FalseKeyword) {
+            result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+            result->setType(VJassExpression::False);
+            result->setValue(nextToken.getValue());
+
+            // TODO Look for operators
+        // TODO Check keywords like not and boolean operators
+        } else {
+            ast->addError(nextToken, "Invalid expression: " + nextToken.getValue());
+        }
+    }
+
+    return result;
+}
+
 }
 
 VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
@@ -300,13 +403,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                                 if (global->getIsArray()) {
                                     global->addErrorAtEndOf(assignmentOperatorToken, QObject::tr("Assignments of global array variables are not allowed."));
                                 } else {
-                                    i++;
-
-                                    if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
-                                        ast->addErrorAtEndOf(arrayToken, QObject::tr("Missing assignment expression."));
-                                    } else {
-                                        // TODO Parse expression of assignment
-                                    }
+                                    parseExpression(tokens, assignmentOperatorToken, global, i);
                                 }
                             }
                         }
