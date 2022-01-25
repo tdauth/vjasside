@@ -129,11 +129,21 @@
     </property>
     <addaction name="actionSettings"/>
    </widget>
+   <widget class="QMenu" name="menuOnline">
+    <property name="title">
+     <string>Online</string>
+    </property>
+    <addaction name="actionCodeOnHive"/>
+    <addaction name="actionJASS_Manual"/>
+    <addaction name="actionJassHelper"/>
+    <addaction name="actionpjass"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
    <addaction name="menuAuto_Completion"/>
    <addaction name="menuAutomaticAnalysis"/>
    <addaction name="menuSettings"/>
+   <addaction name="menuOnline"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -234,6 +244,26 @@
   <action name="actionSettings">
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionCodeOnHive">
+   <property name="text">
+    <string>Code on Hive</string>
+   </property>
+  </action>
+  <action name="actionJASS_Manual">
+   <property name="text">
+    <string>JASS Manual</string>
+   </property>
+  </action>
+  <action name="actionJassHelper">
+   <property name="text">
+    <string>JassHelper</string>
+   </property>
+  </action>
+  <action name="actionpjass">
+   <property name="text">
+    <string>pjass</string>
    </property>
   </action>
  </widget>
