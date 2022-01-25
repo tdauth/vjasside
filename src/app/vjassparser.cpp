@@ -8,6 +8,7 @@
 #include "vjasskeyword.h"
 #include "vjasstype.h"
 #include "vjassglobals.h"
+#include "vjassglobal.h"
 
 VJassParser::VJassParser()
 {
@@ -237,7 +238,82 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
         } else if (token.getType() == VJassToken::ConstantKeyword) {
             if (isInGlobals) {
                 // TODO parse constant
-                ast->addErrorAtEndOf(token, QObject::tr("Constants are not supported yet."));
+                //ast->addErrorAtEndOf(token, QObject::tr("Constants are not supported yet."));
+
+                // TODO Extract into function which can be used for constants and global variables
+                i++;
+
+                if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+                    ast->addErrorAtEndOf(token, QObject::tr("Missing type after constant keyword."));
+                } else {
+                    VJassGlobal *global = new VJassGlobal(token.getLine(), token.getColumn());
+                    global->setIsConstant(true);
+                    const VJassToken &typeToken = tokens.at(i);
+
+                    if (!typeToken.isValidType()) {
+                        ast->addError(typeToken, QObject::tr("Invalid type %1").arg(typeToken.getValue()));
+                    } else {
+                        global->setType(typeToken.getValue());
+                    }
+
+                    i++;
+
+                    if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+                        if (global->getIsConstant()) {
+                            ast->addErrorAtEndOf(typeToken, QObject::tr("Missing name of global variable."));
+                        } else {
+                            ast->addErrorAtEndOf(typeToken, QObject::tr("Missing array keyword or name of global variable."));
+                        }
+                    } else {
+                        const VJassToken &arrayToken = tokens.at(i);
+
+                        if (arrayToken.getType() == VJassToken::ArrayKeyword) {
+                            global->setIsArray(true);
+                            i++;
+                        }
+
+                        if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+                            ast->addErrorAtEndOf(arrayToken, QObject::tr("Missing global variable name."));
+                        } else {
+                            const VJassToken &nameToken = tokens.at(i);
+
+                            if (!nameToken.isValidIdentifier()) {
+                                ast->addError(nameToken, QObject::tr("Invalid identifier for global %1").arg(nameToken.getValue()));
+                            } else {
+                                global->setName(nameToken.getValue());
+                            }
+
+                            i++;
+
+                            // has assignment
+                            if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+                                if (global->getIsConstant()) {
+                                    global->addErrorAtEndOf(nameToken, QObject::tr("Constants require assignment."));
+                                }
+                            } else {
+                                const VJassToken &assignmentOperatorToken = tokens.at(i);
+
+                                if (assignmentOperatorToken.getType() != VJassToken::AssignmentOperator) {
+                                    global->addErrorAtEndOf(assignmentOperatorToken, QObject::tr("Expected assignment operator instead of %1").arg(assignmentOperatorToken.getValue()));
+                                }
+
+                                if (global->getIsArray()) {
+                                    global->addErrorAtEndOf(assignmentOperatorToken, QObject::tr("Assignments of global array variables are not allowed."));
+                                } else {
+                                    i++;
+
+                                    if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+                                        ast->addErrorAtEndOf(arrayToken, QObject::tr("Missing assignment expression."));
+                                    } else {
+                                        // TODO Parse expression of assignment
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    currentGlobals->addChild(global);
+                }
             } else {
                 i++;
 
@@ -360,6 +436,14 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                 // line break
                 } else {
                 }
+            }
+        }
+
+        if (i == tokens.size() - 1) {
+            if (isInGlobals) {
+                ast->addErrorAtEndOf(token, QObject::tr("Missing endglobals"));
+            } else if (isInFunction) {
+                ast->addErrorAtEndOf(token, QObject::tr("Missing endfunction"));
             }
         }
     }

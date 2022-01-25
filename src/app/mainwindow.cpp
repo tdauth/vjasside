@@ -266,7 +266,7 @@ inline QTextCharFormat getNormalFormat() {
  *
  * @param highLightInfo Contains a highlighted text document which will replace the current one.
  */
-void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax) {
+void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool /* checkSyntax */) {
     // TODO this method is slow as hell! Improve its speed! Probably too many tokens!
     // TODO We could try to format a text edit and replace our text edit by the highlighting thread.
     // TODO We can also use setExtraSelections(const QList<QTextEdit::ExtraSelection> &selections) or QSyntaxHighlighter for maybe faster approaches.
@@ -290,6 +290,7 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
 
     // set position back to previous one and remove all formatting
     qDebug() << "Move cursor back to position" << position;
+    // TODO Restore the selection as well.
     QTextCursor textCursor = ui->textEdit->textCursor();
     textCursor.setPosition(position);
     textCursor.setCharFormat(getNormalFormat());
@@ -448,18 +449,11 @@ void MainWindow::restartTimer() {
         killTimer(timerId);
     }
 
-    // create a deep copy to avoid data races
-    QString text = ui->textEdit->toPlainText();
-    text.detach();
-
-    qDebug() << "Storing text with length" << text.length() << "for the thread and starting user input timer";
-
-    //qassert(text.isDetached());
-    scanAndParseInput.storeRelease(new QString(text));
-    scanAndParseResults.storeRelease(nullptr);
-
+    qDebug() << "Restarting user input timer";
     // wait 2 seconds after the user has stopped writing something
     timerId = startTimer(2000);
+
+    // TODO Restart the thread, so it will wait for the next user input instead of continuing with the current scanning/parsing/highlighting.
 }
 
 void MainWindow::documentChanges() {
@@ -516,8 +510,19 @@ void MainWindow::clearAllHighLighting() {
 }
 
 void MainWindow::timerEvent(QTimerEvent *event) {
+    // the user input timer finishes, so the user has stopped writing for some time, let's send the finished text to the thread for handling.
     if (event->timerId() == timerId) {
-        timerId = 0;
+        timerId = 0; // set to 0 so the other timer will fetch from now on
+
+        // create a deep copy to avoid data races
+        QString text = ui->textEdit->toPlainText();
+        text.detach();
+
+        qDebug() << "Finished user input timer and storing text with length" << text.length() << "for the scan and parser thread";
+
+        //qassert(text.isDetached());
+        scanAndParseInput.storeRelease(new QString(text));
+        scanAndParseResults.storeRelease(nullptr);
     } else if (timerId == 0 && event->timerId() == timerIdCheck) {
         //qDebug() << "Checking scan and parse result";
 

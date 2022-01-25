@@ -25,6 +25,7 @@ public:
     const static QString KEYWORD_EXITWHEN;
     const static QString KEYWORD_GLOBALS;
     const static QString KEYWORD_ENDGLOBALS;
+    const static QString KEYWORD_ARRAY;
     const static QString KEYWORD_CONSTANT;
     const static QString KEYWORD_TYPE;
     const static QString KEYWORD_EXTENDS;
@@ -61,9 +62,11 @@ public:
         NativeKeyword,
         GlobalsKeyword,
         EndglobalsKeyword,
+        ArrayKeyword,
         NullKeyword,
         Comment,
         Operator,
+        AssignmentOperator,
         LeftBracket,
         RightBracket,
         LeftSquareBracket,

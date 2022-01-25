@@ -18,6 +18,7 @@ SOURCES += \
     vjassast.cpp \
     vjassfunction.cpp \
     vjassfunctionparameter.cpp \
+    vjassglobal.cpp \
     vjassglobals.cpp \
     vjasskeyword.cpp \
     vjassnative.cpp \
@@ -36,6 +37,7 @@ HEADERS += \
     vjassast.h \
     vjassfunction.h \
     vjassfunctionparameter.h \
+    vjassglobal.h \
     vjassglobals.h \
     vjasskeyword.h \
     vjassnative.h \

@@ -108,8 +108,15 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 column += columns;
                 lines += lines;
                 i += length;
+
+            // Assignment Operator
+            } else if (currentContent.startsWith("=")) {
+                result.push_back(VJassToken(currentContent.mid(i, 1), line, column, VJassToken::AssignmentOperator));
+
+                column += 1;
+                i += 1;
             // operator
-            } else if (currentContent.startsWith("/") || currentContent.startsWith("+") || currentContent.startsWith("-") || currentContent.startsWith("*") || currentContent.startsWith("=")) {
+            } else if (currentContent.startsWith("/") || currentContent.startsWith("+") || currentContent.startsWith("-") || currentContent.startsWith("*")) {
                 result.push_back(VJassToken(currentContent.mid(i, 1), line, column, VJassToken::Operator));
 
                 column += 1;

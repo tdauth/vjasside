@@ -158,7 +158,7 @@ const QMap<HighLightInfo::Location, HighLightInfo::CustomTextCharFormat>& HighLi
     return customTextCharFormats;
 }
 
-QList<QTextEdit::ExtraSelection> HighLightInfo::toExtraSelections(QTextDocument *textDocument, bool checkSyntax) const {
+QList<QTextEdit::ExtraSelection> HighLightInfo::toExtraSelections(QTextDocument * /* textDocument */, bool /* checkSyntax */) const {
     // TODO use checkSyntax to remove all the underlining etc.
     return extraSelections;
 }

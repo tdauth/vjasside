@@ -23,6 +23,7 @@ const QString VJassToken::KEYWORD_ENDLOOP = "endloop";
 const QString VJassToken::KEYWORD_EXITWHEN = "exitwhen";
 const QString VJassToken::KEYWORD_GLOBALS = "globals";
 const QString VJassToken::KEYWORD_ENDGLOBALS = "endglobals";
+const QString VJassToken::KEYWORD_ARRAY = "array";
 const QString VJassToken::KEYWORD_CONSTANT = "constant";
 const QString VJassToken::KEYWORD_TYPE = "type";
 const QString VJassToken::KEYWORD_EXTENDS = "extends";
@@ -47,6 +48,7 @@ const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_EXITWHEN,
     VJassToken::KEYWORD_GLOBALS,
     VJassToken::KEYWORD_ENDGLOBALS,
+    VJassToken::KEYWORD_ARRAY,
     VJassToken::KEYWORD_CONSTANT,
     VJassToken::KEYWORD_TYPE,
     VJassToken::KEYWORD_EXTENDS,
@@ -3465,6 +3467,7 @@ bool VJassToken::highlight() const {
     return getType() != VJassToken::LineBreak
         && getType() != VJassToken::WhiteSpace
         && getType() != VJassToken::Operator
+        && getType() != VJassToken::AssignmentOperator
         && getType() != VJassToken::LeftBracket
         && getType() != VJassToken::RightBracket
         && getType() != VJassToken::LeftSquareBracket
@@ -3504,6 +3507,7 @@ bool VJassToken::isValidKeyword() const {
         || getType() == VJassToken::NativeKeyword
         || getType() == VJassToken::GlobalsKeyword
         || getType() == VJassToken::EndglobalsKeyword
+        || getType() == VJassToken::ArrayKeyword
         || getType() == VJassToken::NullKeyword
     ;
 }
@@ -3551,6 +3555,8 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::GlobalsKeyword;
     } else if (keyword == KEYWORD_ENDGLOBALS) {
         return VJassToken::EndglobalsKeyword;
+    } else if (keyword == KEYWORD_ARRAY) {
+        return VJassToken::ArrayKeyword;
     } else if (keyword == KEYWORD_NULL) {
         return VJassToken::NullKeyword;
     }
