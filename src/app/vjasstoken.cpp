@@ -12,6 +12,7 @@ const QString VJassToken::KEYWORD_TAKES = "takes";
 const QString VJassToken::KEYWORD_NOTHING = "nothing";
 const QString VJassToken::KEYWORD_RETURNS = "returns";
 const QString VJassToken::KEYWORD_RETURN = "return";
+const QString VJassToken::KEYWORD_LOCAL = "local";
 const QString VJassToken::KEYWORD_SET = "set";
 const QString VJassToken::KEYWORD_CALL = "call";
 const QString VJassToken::KEYWORD_IF = "if";
@@ -3502,6 +3503,7 @@ bool VJassToken::isValidKeyword() const {
         || getType() == VJassToken::NothingKeyword
         || getType() == VJassToken::ReturnsKeyword
         || getType() == VJassToken::ReturnKeyword
+        || getType() == VJassToken::LocalKeyword
         || getType() == VJassToken::SetKeyword
         || getType() == VJassToken::CallKeyword
         || getType() == VJassToken::IfKeyword
@@ -3540,6 +3542,8 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::ReturnsKeyword;
     } else if (keyword == KEYWORD_RETURN) {
         return VJassToken::ReturnKeyword;
+    } else if (keyword == KEYWORD_LOCAL) {
+        return VJassToken::LocalKeyword;
     } else if (keyword == KEYWORD_SET) {
         return VJassToken::SetKeyword;
     } else if (keyword == KEYWORD_CALL) {

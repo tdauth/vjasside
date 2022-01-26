@@ -53,6 +53,7 @@ public:
         NothingKeyword,
         ReturnsKeyword,
         ReturnKeyword,
+        LocalKeyword,
         SetKeyword,
         CallKeyword,
         IfKeyword,

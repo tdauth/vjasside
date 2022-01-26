@@ -15,7 +15,6 @@ SOURCES += \
     linenumbers.cpp \
     main.cpp \
     mainwindow.cpp \
-    settingsdialog.cpp \
     vjassast.cpp \
     vjassexpression.cpp \
     vjassfunction.cpp \
@@ -23,11 +22,13 @@ SOURCES += \
     vjassglobal.cpp \
     vjassglobals.cpp \
     vjasskeyword.cpp \
+    vjasslocalstatement.cpp \
     vjassnative.cpp \
     vjassparseerror.cpp \
     vjassparser.cpp \
-    vjassparseresult.cpp \
     vjassscanner.cpp \
+    vjasssetstatement.cpp \
+    vjassstatement.cpp \
     vjasstoken.cpp \
     vjasstype.cpp
 
@@ -36,7 +37,6 @@ HEADERS += \
     highlightinfo.h \
     linenumbers.h \
     mainwindow.h \
-    settingsdialog.h \
     vjassast.h \
     vjassexpression.h \
     vjassfunction.h \
@@ -44,18 +44,19 @@ HEADERS += \
     vjassglobal.h \
     vjassglobals.h \
     vjasskeyword.h \
+    vjasslocalstatement.h \
     vjassnative.h \
     vjassparseerror.h \
     vjassparser.h \
-    vjassparseresult.h \
     vjassscanner.h \
+    vjasssetstatement.h \
+    vjassstatement.h \
     vjasstoken.h \
     vjasstype.h
 
 FORMS += \
     linenumbers.ui \
-    mainwindow.ui \
-    settingsdialog.ui
+    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
