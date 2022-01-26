@@ -82,8 +82,9 @@ public:
     QTextDocument* getTextDocument() const;
     const QList<VJassParseError>& getParseErrors() const;
 
-    void applyNormalFormat(QTextCharFormat &textCharFormat) const;
-    QTextCharFormat getNormalFormat() const;
+    static QFont getNormalFont();
+    static void applyNormalFormat(QTextCharFormat &textCharFormat);
+    static QTextCharFormat getNormalFormat();
 
 private:
     CustomTextCharFormat& getCustomTextCharFormat(int line, int column);

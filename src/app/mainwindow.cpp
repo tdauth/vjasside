@@ -51,14 +51,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outputListItemDoubleClicked);
 
+    // basic settings for text
+    ui->textEdit->setFont(HighLightInfo::getNormalFont());
+    ui->textEdit->setTabStopDistance(20.0);
+
     // initial line
     // move cursor to start to edit the document
     ui->textEdit->setFocus();
-    QTextCursor startCursor = ui->textEdit->textCursor();
-    startCursor.movePosition(QTextCursor::Start);
-    startCursor.beginEditBlock();
-    startCursor.endEditBlock();
-    ui->textEdit->setTextCursor(startCursor);
+    updateCursorPosition(0);
 
     updateLineNumbersView();
     updateLineNumbers();
@@ -242,16 +242,14 @@ void MainWindow::quit() {
     }
 }
 
-void MainWindow::updateFormatAndCursor(const HighLightInfo &highLightInfo, int position) {
-    QTextCursor textCursor = ui->textEdit->textCursor();
-    textCursor.setPosition(position);
-    textCursor.setCharFormat(highLightInfo.getNormalFormat());
-    ui->textEdit->setTextCursor(textCursor);
-
-    const int tabStop = 2;  // 2 characters
-
-    QFontMetrics metrics(highLightInfo.getNormalFormat().font());
-    ui->textEdit->setTabStopDistance(metrics.boundingRect(' ').width() * tabStop);
+void MainWindow::updateCursorPosition(int position) {
+    QTextCursor startCursor = ui->textEdit->textCursor();
+    startCursor.setCharFormat(HighLightInfo::getNormalFormat());
+    startCursor.setPosition(position);
+    startCursor.beginEditBlock();
+    startCursor.endEditBlock();
+    ui->textEdit->setTextCursor(startCursor);
+    ui->textEdit->setTabStopDistance(20.0);
 }
 
 /**
@@ -287,7 +285,7 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
     // set position back to previous one and remove all formatting
     qDebug() << "Move cursor back to position" << position;
     // TODO Restore the selection as well.
-    updateFormatAndCursor(highLightInfo, position);
+    updateCursorPosition(position);
 
     /*
     // make sure no slots are triggered by this to prevent endless recursions

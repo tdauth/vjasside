@@ -154,22 +154,26 @@ void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat 
     }
 }
 
-void HighLightInfo::applyNormalFormat(QTextCharFormat &textCharFormat) const {
+QFont HighLightInfo::getNormalFont() {
     QFont font;
     font.setFamily("Courier");
     font.setStyleHint(QFont::Monospace);
     font.setFixedPitch(true);
     font.setPointSize(10);
 
+    return font;
+}
+
+void HighLightInfo::applyNormalFormat(QTextCharFormat &textCharFormat) {
     textCharFormat.setBackground(Qt::white);
     textCharFormat.setForeground(Qt::black);
     textCharFormat.setUnderlineStyle(QTextCharFormat::NoUnderline);
     textCharFormat.setFontItalic(false);
     textCharFormat.setFontWeight(QFont::Normal);
-    textCharFormat.setFont(font);
+    textCharFormat.setFont(getNormalFont());
 }
 
-QTextCharFormat HighLightInfo::getNormalFormat() const {
+QTextCharFormat HighLightInfo::getNormalFormat() {
     // reset formatting for upcoming text
     QTextCharFormat fmtNormal;
     applyNormalFormat(fmtNormal);
