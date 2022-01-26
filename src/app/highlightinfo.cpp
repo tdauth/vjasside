@@ -116,7 +116,7 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
 
         // format all characters
         cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
-        QTextCharFormat fmt; // = getNormalFormat();
+        QTextCharFormat fmt = getNormalFormat();
         customTextCharFormat.applyToTextCharFormat(fmt, ast != nullptr);
         cursor.setCharFormat(fmt); // for bold it is required that the cursor has the format
 
@@ -152,6 +152,29 @@ void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat 
         //qDebug() << "Foreground!";
         fmt.setForeground(foregroundColor);
     }
+}
+
+void HighLightInfo::applyNormalFormat(QTextCharFormat &textCharFormat) const {
+    QFont font;
+    font.setFamily("Courier");
+    font.setStyleHint(QFont::Monospace);
+    font.setFixedPitch(true);
+    font.setPointSize(10);
+
+    textCharFormat.setBackground(Qt::white);
+    textCharFormat.setForeground(Qt::black);
+    textCharFormat.setUnderlineStyle(QTextCharFormat::NoUnderline);
+    textCharFormat.setFontItalic(false);
+    textCharFormat.setFontWeight(QFont::Normal);
+    textCharFormat.setFont(font);
+}
+
+QTextCharFormat HighLightInfo::getNormalFormat() const {
+    // reset formatting for upcoming text
+    QTextCharFormat fmtNormal;
+    applyNormalFormat(fmtNormal);
+
+    return fmtNormal;
 }
 
 const QMap<HighLightInfo::Location, HighLightInfo::CustomTextCharFormat>& HighLightInfo::getFormattedLocations() const {

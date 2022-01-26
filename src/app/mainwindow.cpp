@@ -240,25 +240,16 @@ void MainWindow::quit() {
     }
 }
 
-namespace {
+void MainWindow::updateFormatAndCursor(const HighLightInfo &highLightInfo, int position) {
+    QTextCursor textCursor = ui->textEdit->textCursor();
+    textCursor.setPosition(position);
+    textCursor.setCharFormat(highLightInfo.getNormalFormat());
+    ui->textEdit->setTextCursor(textCursor);
 
-inline void applyNormalFormat(QTextCharFormat &textCharFormat) {
-    textCharFormat.setBackground(Qt::white);
-    textCharFormat.setForeground(Qt::black);
-    textCharFormat.setFontWeight(QFont::Normal);
-    textCharFormat.setUnderlineStyle(QTextCharFormat::NoUnderline);
-    textCharFormat.setFontItalic(false);
-    textCharFormat.setFontWeight(QFont::Normal);
-}
+    const int tabStop = 2;  // 2 characters
 
-inline QTextCharFormat getNormalFormat() {
-    // reset formatting for upcoming text
-    QTextCharFormat fmtNormal;
-    applyNormalFormat(fmtNormal);
-
-    return fmtNormal;
-}
-
+    QFontMetrics metrics(highLightInfo.getNormalFormat().font());
+    ui->textEdit->setTabStopDistance(metrics.boundingRect(' ').width() * tabStop);
 }
 
 /**
@@ -291,10 +282,7 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
     // set position back to previous one and remove all formatting
     qDebug() << "Move cursor back to position" << position;
     // TODO Restore the selection as well.
-    QTextCursor textCursor = ui->textEdit->textCursor();
-    textCursor.setPosition(position);
-    textCursor.setCharFormat(getNormalFormat());
-    ui->textEdit->setTextCursor(textCursor);
+    updateFormatAndCursor(highLightInfo, position);
 
     /*
     // make sure no slots are triggered by this to prevent endless recursions

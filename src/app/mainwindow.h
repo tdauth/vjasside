@@ -55,6 +55,7 @@ public slots:
     void resumeParserThread();
 
 private slots:
+    void updateFormatAndCursor(const HighLightInfo &highLightInfo, int position);
     void highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax);
     void outputListItemDoubleClicked(QListWidgetItem *item);
 

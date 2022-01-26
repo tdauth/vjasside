@@ -13,6 +13,7 @@
 #include "vjassstatement.h"
 #include "vjasslocalstatement.h"
 #include "vjasssetstatement.h"
+#include "vjassifstatement.h"
 
 VJassParser::VJassParser()
 {
@@ -91,6 +92,8 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
                                 } else {
                                     expectMoreParameters = false;
                                 }
+
+                                i++;
                             } else {
                                 if (!parameterType.isValidType()) {
                                     vjassFunction->addErrorAtEndOf(parameterType, "Invalid parameter type: " + parameterType.getValue());
@@ -110,9 +113,10 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
                                         gotError = true;
                                     }
                                 }
+
+                                i += 2;
                             }
 
-                            i += 2;
                             parameterCounter++;
 
                             if (i < tokens.size()) {
@@ -149,7 +153,7 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
                                 const VJassToken &returnType = tokens.at(i);
                                 vjassFunction->setReturnType(returnType.getValue());
 
-                                if (!returnType.isValidType()) {
+                                if (returnType.getType() != VJassToken::NothingKeyword && !returnType.isValidType()) {
                                     vjassFunction->addErrorAtEndOf(returnType, QObject::tr("Invalid return type: %1").arg(returnType.getValue()));
                                 }
                             }
@@ -268,8 +272,14 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
 }
 
-inline bool hasReachedEndOfLine(const QList<VJassToken> &tokens, int i) {
-    return i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak ||  tokens.at(i).getType() == VJassToken::Comment;
+inline bool hasReachedEndOfLine(const QList<VJassToken> &tokens, int i, bool &wasLineBreak) {
+    bool result = i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak ||  tokens.at(i).getType() == VJassToken::Comment;
+
+    if (tokens.at(i).getType() == VJassToken::LineBreak) {
+        wasLineBreak = true;
+    }
+
+    return result;
 }
 
 VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
@@ -521,7 +531,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                 i++;
 
-                if (hasReachedEndOfLine(tokens, i)) {
+                if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                     ast->addErrorAtEndOf(token, QObject::tr("Expected type name."));
                 } else {
                     const VJassToken &typeName = tokens.at(i);
@@ -533,7 +543,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                         i++;
 
-                        if (hasReachedEndOfLine(tokens, i)) {
+                        if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                             ast->addErrorAtEndOf(typeName, QObject::tr("Expected local variable name."));
                         } else {
                             const VJassToken &variableIdentifier = tokens.at(i);
@@ -545,9 +555,8 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                                 i++;
 
-                                if (hasReachedEndOfLine(tokens, i)) {
-                                    ast->addErrorAtEndOf(variableIdentifier, QObject::tr("Expected assignment operator."));
-                                } else {
+                                // assignment is optional
+                                if (!hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                                     const VJassToken &assignmentOperator = tokens.at(i);
 
                                     if (assignmentOperator.getType() != VJassToken::AssignmentOperator) {
@@ -578,7 +587,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                 i++;
 
-                if (hasReachedEndOfLine(tokens, i)) {
+                if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                     ast->addErrorAtEndOf(token, QObject::tr("Expected variable name."));
                 } else {
                     const VJassToken &variableName = tokens.at(i);
@@ -588,7 +597,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                     } else {
                         i++;
 
-                        if (hasReachedEndOfLine(tokens, i)) {
+                        if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                             ast->addErrorAtEndOf(variableName, QObject::tr("Expected assignment operator."));
                         } else {
                             const VJassToken &assignmentOperator = tokens.at(i);
@@ -598,7 +607,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                             } else {
                                 i++;
 
-                                if (hasReachedEndOfLine(tokens, i)) {
+                                if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                                     ast->addErrorAtEndOf(assignmentOperator, QObject::tr("Expected assignment expression."));
                                 } else {
                                     VJassExpression *expression = parseExpression(tokens, token, ast, i);
@@ -616,12 +625,23 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                 currentFunction->addChild(setStatement);
             }
+        } else if (token.getType() == VJassToken::IfKeyword) {
+            if (!isInFunction) {
+                ast->addError(token, QObject::tr("Keyword if is only allowed inside of a function"));
+            } else {
+                afterLocalsInFunction = true;
+                VJassIfStatement *ifStatement = new VJassIfStatement(token.getLine(), token.getColumn());
+
+                currentFunction->addChild(ifStatement);
+            }
         } else if (token.getType() == VJassToken::Comment) {
             ast->addComment(token.getValue());
         } else if (token.getType() == VJassToken::Unknown) {
-            ast->addError(token, "Unknown symbol: " + token.getValue());
+            ast->addError(token, QObject::tr("Unknown text %1").arg(token.getValue()));
         } else if (token.getType() == VJassToken::Text) {
             suggestLineStartKeywords(isInFunction, isInGlobals, *ast, &token);
+
+            ast->addError(token, QObject::tr("Unknown text %1").arg(token.getValue()));
         // all keywords not handled at this point should be invalid here
         } else if (token.isValidKeyword()) {
             ast->addError(token, "Unexpected keyword: " + token.getValue());

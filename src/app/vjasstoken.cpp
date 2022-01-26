@@ -43,6 +43,7 @@ const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_NOTHING,
     VJassToken::KEYWORD_RETURNS,
     VJassToken::KEYWORD_RETURN,
+    VJassToken::KEYWORD_LOCAL,
     VJassToken::KEYWORD_SET,
     VJassToken::KEYWORD_CALL,
     VJassToken::KEYWORD_IF,
