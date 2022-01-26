@@ -171,7 +171,8 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
 /**
  * @brief parseExpression
  *
- * Something like: ( ( x + y) / myFunction(10) )
+ * Expressions are something like: ( ( x + y) / myFunction(10) )
+ * This function parses expressions from left to right and the nesting recursively.
  *
  * @param tokens
  * @param token
@@ -188,22 +189,25 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
         const VJassToken &nextToken = tokens.at(i);
 
         if (nextToken.getType() == VJassToken::LeftBracket) {
-            bool foundRightBracket = false;
+            int rightBracketIndex = -1;
+            qDebug() << "Left bracket at" << i;
             int j = i + 1;
 
             for ( ; j < tokens.size(); ++j) {
                 const VJassToken &rightBracket = tokens.at(j);
 
                 if (rightBracket.getType() == VJassToken::RightBracket) {
-                    foundRightBracket = true;
+                    qDebug() << "Found right bracket at" << j;
+                    rightBracketIndex = j;
                 } else if (rightBracket.getType() == VJassToken::LineBreak) {
+                    qDebug() << "Found line break" << j;
                     ast->addErrorAtEndOf(nextToken, QObject::tr("Missing right bracket for left bracket."));
 
                     break;
                 }
             }
 
-            if (!foundRightBracket) {
+            if (rightBracketIndex == -1) {
                 ast->addErrorAtEndOf(nextToken, QObject::tr("Missing right bracket for left bracket."));
             } else {
                 result = new VJassExpression(nextToken.getLine(), nextToken.getColumn()) ;
@@ -211,7 +215,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
                 // get all expressions in between the brackets
                 if (j > i + 1) {
-                    i++;
+                    qDebug() << "Parsing expression between brackets" << i;
                     VJassAst *child = parseExpression(tokens, nextToken, result, i);
 
                     if (child != nullptr) {
@@ -221,6 +225,11 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                     }
                 } else {
                     result->addErrorAtEndOf(nextToken, QObject::tr("Empty expression between brackets"));
+                }
+
+                // skip the right bracket
+                if (rightBracketIndex != -1 && i < rightBracketIndex) {
+                    i++;
                 }
             }
         // operator
@@ -286,6 +295,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
     VJassAst *ast = new VJassAst(0, 0);
     bool isInFunction = false;
     bool afterLocalsInFunction = false;
+    QStack<VJassIfStatement*> ifStatements;
     VJassFunction *currentFunction = nullptr;
     bool isInGlobals = false;
     VJassGlobals *currentGlobals = nullptr;
@@ -518,6 +528,12 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                 isInFunction = false;
                 currentFunction = nullptr;
                 afterLocalsInFunction = false;
+
+                if (!ifStatements.isEmpty()) {
+                    ast->addError(token, QObject::tr("%1 unclosed if statements").arg(ifStatements.size()));
+                }
+
+                ifStatements.clear(); // remove unclosed if statements
             } else {
                 ast->addError(token, "Expected after defining a function before using: " + token.getValue());
             }
@@ -562,11 +578,9 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                                     if (assignmentOperator.getType() != VJassToken::AssignmentOperator) {
                                         ast->addError(assignmentOperator, QObject::tr("Invalid assignment operator %1").arg(variableIdentifier.getValue()));
                                     } else {
-                                        VJassExpression *expression = parseExpression(tokens, token, ast, i);
+                                        VJassExpression *expression = parseExpression(tokens, assignmentOperator, ast, i);
 
-                                        if (expression == nullptr) {
-                                            ast->addErrorAtEndOf(variableIdentifier, QObject::tr("Expected assignment expression."));
-                                        } else {
+                                        if (expression != nullptr) {
                                             localStatement->addChild(expression);
                                         }
                                     }
@@ -632,7 +646,36 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                 afterLocalsInFunction = true;
                 VJassIfStatement *ifStatement = new VJassIfStatement(token.getLine(), token.getColumn());
 
+                VJassExpression *expression = parseExpression(tokens, token, ast, i);
+
+                if (expression != nullptr) {
+                    ifStatement->addChild(expression);
+                }
+
+                i++;
+
+                if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
+                    ast->addErrorAtEndOf(token, QObject::tr("Expected then keyword."));
+                } else {
+                    const VJassToken &thenToken = tokens.at(i);
+
+                    if (thenToken.getType() != VJassToken::ThenKeyword) {
+                        ast->addErrorAtEndOf(thenToken, QObject::tr("Expected then keyword instead of %1").arg(thenToken.getValue()));
+                    }
+                }
+
                 currentFunction->addChild(ifStatement);
+                ifStatements.push_back(ifStatement);
+            }
+        } else if (token.getType() == VJassToken::EndifKeyword) {
+            if (!isInFunction) {
+                ast->addError(token, QObject::tr("Unexpected endif outside of function body"));
+            }
+
+            if (ifStatements.isEmpty()) {
+                ast->addError(token, QObject::tr("Unexpected endif keyword"));
+            } else {
+                ifStatements.pop_back();
             }
         } else if (token.getType() == VJassToken::Comment) {
             ast->addComment(token.getValue());
