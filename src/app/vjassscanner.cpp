@@ -7,28 +7,52 @@ VJassScanner::VJassScanner()
 
 }
 
+inline bool isFollowedBySpace(const QString &currentContent, int length) {
+    // TODO Space and operators cannot follow but not text
+    return length == currentContent.length() || !QRegularExpression("[A-Za-z_0-9]{1}").match(currentContent.mid(length, 1)).hasMatch();
+}
+
 QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpaces) {
     QList<VJassToken> result;
     int line = 0;
     int column = 0;
 
+    // TODO Generated lexers are much faster probably since they have internal state machines going from one symbol to the next.
     for (int i = 0; i < content.size(); ) {
         // TODO Avoid copying at all cost -> some string view, should not by copied by implicit sharing.
         QString currentContent = content.mid(i);
 
         bool matched = false;
 
-        for (const QString &keyword : VJassToken::KEYWRODS_ALL) {
-            if (currentContent.startsWith(keyword)) {
-                result.push_back(VJassToken(keyword, line, column, VJassToken::typeFromKeyword(keyword)));
-                i += keyword.length();
-                column += keyword.length();
+        // boolean literal true
+        if (currentContent.startsWith(VJassToken::KEYWORD_TRUE) && isFollowedBySpace(currentContent, VJassToken::KEYWORD_TRUE.length())) {
+            const int length = VJassToken::KEYWORD_TRUE.length();
+            result.push_back(VJassToken(currentContent.mid(i, length), line, column, VJassToken::TrueKeyword));
+            column += length;
+            i += length;
+            matched = true;
+        // boolean literal false
+        } else if (currentContent.startsWith(VJassToken::KEYWORD_FALSE) && isFollowedBySpace(currentContent, VJassToken::KEYWORD_FALSE.length())) {
+            const int length = VJassToken::KEYWORD_FALSE.length();
+            result.push_back(VJassToken(currentContent.mid(i, length), line, column, VJassToken::FalseKeyword));
+            column += length;
+            i += length;
+            matched = true;
+        }
 
-                //qDebug() << "Matched keyword" << keyword << " with length" << keyword.length();
+        if (!matched) {
+            for (const QString &keyword : VJassToken::KEYWRODS_ALL) { // TODO Except TRUE and FALSE
+                if (currentContent.startsWith(keyword) && isFollowedBySpace(currentContent, keyword.length())) {
+                    result.push_back(VJassToken(keyword, line, column, VJassToken::typeFromKeyword(keyword)));
+                    i += keyword.length();
+                    column += keyword.length();
 
-                matched = true;
+                    //qDebug() << "Matched keyword" << keyword << " with length" << keyword.length();
 
-                break;
+                    matched = true;
+
+                    break;
+                }
             }
         }
 
@@ -121,18 +145,6 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
                 column += 1;
                 i += 1;
-            // boolean literal true
-            } else if (currentContent.startsWith("true")) {
-                result.push_back(VJassToken(currentContent.mid(i, 4), line, column, VJassToken::TrueKeyword));
-
-                column += 4;
-                i += 4;
-            // boolean literal false
-            } else if (currentContent.startsWith("false")) {
-                result.push_back(VJassToken(currentContent.mid(i, 5), line, column, VJassToken::FalseKeyword));
-
-                column += 5;
-                i += 5;
             // real literal
             } else if (currentContent.startsWith(".")) {
                 int j = i + 1;
