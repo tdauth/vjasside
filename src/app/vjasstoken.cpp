@@ -3579,12 +3579,17 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::ArrayKeyword;
     } else if (keyword == KEYWORD_NULL) {
         return VJassToken::NullKeyword;
+    } else if (keyword == KEYWORD_NOT) {
+        return VJassToken::NotKeyword;
+    } else if (keyword == KEYWORD_AND) {
+        return VJassToken::AndKeyword;
+    } else if (keyword == KEYWORD_OR) {
+        return VJassToken::OrKeyword;
     } else if (keyword == KEYWORD_TRUE) {
         return VJassToken::TrueKeyword;
     } else if (keyword == KEYWORD_FALSE) {
         return VJassToken::FalseKeyword;
     }
-
 
     Q_ASSERT(false);
 }
