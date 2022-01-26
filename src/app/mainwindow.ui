@@ -69,7 +69,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QPlainTextEdit" name="textEdit"/>
+          <widget class="QPlainTextEdit" name="textEdit">
+           <property name="tabStopWidth">
+            <number>20</number>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>

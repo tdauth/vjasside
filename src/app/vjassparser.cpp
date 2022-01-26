@@ -710,10 +710,14 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
         }
 
         if (i == tokens.size() - 1) {
+            if (ifStatements.size() > 0) {
+                ast->addErrorAtEndOf(tokens.last(), QObject::tr("%1 unclosed if statements").arg(ifStatements.size()));
+            }
+
             if (isInGlobals) {
-                ast->addErrorAtEndOf(token, QObject::tr("Missing endglobals"));
+                ast->addErrorAtEndOf(tokens.last(), QObject::tr("Missing endglobals"));
             } else if (isInFunction) {
-                ast->addErrorAtEndOf(token, QObject::tr("Missing endfunction"));
+                ast->addErrorAtEndOf(tokens.last(), QObject::tr("Missing endfunction"));
             }
         }
     }

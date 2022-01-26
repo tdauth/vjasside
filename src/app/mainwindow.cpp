@@ -10,7 +10,6 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , syntaxHighlighter(new SyntaxHighlighter(ui->textEdit->document()))
     , popup(new AutoCompletionPopup)
     , timerId(0)
     , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
@@ -63,6 +62,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     updateLineNumbersView();
     updateLineNumbers();
+
+    syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
 
     /*
      * Scan, parse and prestore highlighting information concurrently to avoid blocking the GUI.
