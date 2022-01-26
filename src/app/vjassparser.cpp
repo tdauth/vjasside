@@ -193,7 +193,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
             qDebug() << "Left bracket at" << i;
             int j = i + 1;
 
-            for ( ; j < tokens.size(); ++j) {
+            for ( ; j < tokens.size() && rightBracketIndex == -1; ++j) {
                 const VJassToken &rightBracket = tokens.at(j);
 
                 if (rightBracket.getType() == VJassToken::RightBracket) {

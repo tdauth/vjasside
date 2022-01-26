@@ -15,6 +15,7 @@ SOURCES += \
     linenumbers.cpp \
     main.cpp \
     mainwindow.cpp \
+    syntaxhighlighter.cpp \
     vjassast.cpp \
     vjassexpression.cpp \
     vjassfunction.cpp \
@@ -38,6 +39,7 @@ HEADERS += \
     highlightinfo.h \
     linenumbers.h \
     mainwindow.h \
+    syntaxhighlighter.h \
     vjassast.h \
     vjassexpression.h \
     vjassfunction.h \

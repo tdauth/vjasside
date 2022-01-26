@@ -10,6 +10,7 @@
 #include <QAtomicPointer>
 
 #include "vjassparser.h"
+#include "syntaxhighlighter.h"
 #include "autocompletionpopup.h"
 #include "highlightinfo.h"
 
@@ -72,6 +73,8 @@ private:
 
     bool documentHasChanged = false;
     QString fileDir;
+
+    SyntaxHighlighter *syntaxHighlighter;
 
     bool expectAutoComplete = false;
     AutoCompletionPopup *popup;

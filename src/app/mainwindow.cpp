@@ -10,6 +10,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , syntaxHighlighter(new SyntaxHighlighter(ui->textEdit->document()))
     , popup(new AutoCompletionPopup)
     , timerId(0)
     , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
@@ -278,6 +279,9 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
 
     //ui->textEdit->setExtraSelections(extraSelections);
     ui->textEdit->setDocument(highLightInfo.getTextDocument());
+    // TODO Try setting the format via the syntax highlighter and only the changed blocks
+    // TODO Maybe we can detect which block is rehighlighted?
+    //syntaxHighlighter->
 
     // set position back to previous one and remove all formatting
     qDebug() << "Move cursor back to position" << position;
