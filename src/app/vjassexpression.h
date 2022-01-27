@@ -15,6 +15,7 @@ public:
         True,
         False,
         FunctionCall,
+        ArrayAccess,
         Brackets,
         Identifier,
         And,

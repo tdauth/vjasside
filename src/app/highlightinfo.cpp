@@ -36,6 +36,10 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
             } else if (token.getType() == VJassToken::RawCodeLiteral || token.getType() == VJassToken::IntegerLiteral || token.getType() == VJassToken::RealLiteral) {
                 customTextCharFormat.applyForegroundColor = true;
                 customTextCharFormat.foregroundColor = Qt::darkYellow;
+            } else if (token.getType() == VJassToken::StringLiteral) {
+                customTextCharFormat.applyForegroundColor = true;
+                customTextCharFormat.foregroundColor = Qt::red;
+                // TODO highlight escape sequence inside of the string
             } else if (token.getType() == VJassToken::Text) {
                 // Make a quick check for the symbol from hash sets of standard types and functions so we have these highlighted even without syntax checking
                 if (token.isCommonJType()) {

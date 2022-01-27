@@ -21,6 +21,22 @@ VJassParser::VJassParser()
 
 namespace {
 
+inline bool hasReachedEndOfLine(const QList<VJassToken> &tokens, int i, bool &wasLineBreak) {
+    bool result = i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak ||  tokens.at(i).getType() == VJassToken::Comment;
+
+    if (i < tokens.size() && tokens.at(i).getType() == VJassToken::LineBreak) {
+        wasLineBreak = true;
+    }
+
+    return result;
+}
+
+inline bool hasReachedEndOfLine(const QList<VJassToken> &tokens, int i) {
+    bool wasLineBreak = false;
+
+    return hasReachedEndOfLine(tokens, i, wasLineBreak);
+}
+
 inline void suggestLineStartKeywords(bool isInFunction, bool isInGlobals, VJassAst &ast, const VJassToken *token) {
     QList<QString> keywords;
 
@@ -173,6 +189,7 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
  *
  * Expressions are something like: ( ( x + y) / myFunction(10) )
  * This function parses expressions from left to right and the nesting recursively.
+ * TODO It can check valid operations for literals but not for identifiers since their types are not known at parsing.
  *
  * @param tokens
  * @param token
@@ -188,6 +205,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
     } else {
         const VJassToken &nextToken = tokens.at(i);
 
+        // TODO Can be a function call as well. Get all parameters in between?
         if (nextToken.getType() == VJassToken::LeftBracket) {
             int rightBracketIndex = -1;
             qDebug() << "Left bracket at" << i;
@@ -238,26 +256,163 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
         // identifier
         } else if (nextToken.getType() == VJassToken::Text) {
+            const int j = i + 1;
 
-            // TODO Look for operators
+            if (!hasReachedEndOfLine(tokens, j)) {
+                const VJassToken &bracket = tokens.at(j);
+
+                // function call
+                if (bracket.getType() == VJassToken::LeftBracket) {
+                    VJassExpression *functionCall = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+                    functionCall->setType(VJassExpression::FunctionCall);
+
+                    VJassExpression *parameters = parseExpression(tokens, token, ast, i);
+
+                    if (parameters != nullptr) {
+                        functionCall->addChild(parameters);
+                    }
+
+                    result = functionCall;
+                // array access
+                } else if (bracket.getType() == VJassToken::LeftSquareBracket) {
+                    VJassExpression *arrayAccess = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+                    arrayAccess->setType(VJassExpression::ArrayAccess);
+
+                    i++;
+                    VJassExpression *index = parseExpression(tokens, token, ast, i);
+
+                    if (index != nullptr) {
+                        arrayAccess->addChild(index);
+                    }
+
+                    result = arrayAccess;
+                // operation
+                } else if (bracket.getType() == VJassToken::Operator) {
+                    VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                    if (bracket.getValue() == "+") {
+                        operation->setType(VJassExpression::Sum);
+                    } else if (bracket.getValue() == "-") {
+                        operation->setType(VJassExpression::Substraction);
+                    } else if (bracket.getValue() == "*") {
+                        operation->setType(VJassExpression::Multiplication);
+                    } else if (bracket.getValue() == "/") {
+                        operation->setType(VJassExpression::Division);
+                    }
+
+                    i++;
+                    VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                    if (rightOperation != nullptr) {
+                        operation->addChild(rightOperation);
+                    }
+
+                    result = operation;
+                } else {
+                    ast->addError(bracket, QObject::tr("Unexpected token after identifier: %1").arg(bracket.getValue()));
+                }
+            }
         } else if (nextToken.getType() == VJassToken::IntegerLiteral) {
             result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
             result->setType(VJassExpression::IntegerLiteral);
             result->setValue(nextToken.getValue());
 
-            // TODO Look for operators
+            const int j = i + 1;
+
+            if (!hasReachedEndOfLine(tokens, j)) {
+                const VJassToken &bracket = tokens.at(j);
+
+                if (bracket.getType() == VJassToken::Operator) {
+                    VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                    if (bracket.getValue() == "+") {
+                        operation->setType(VJassExpression::Sum);
+                    } else if (bracket.getValue() == "-") {
+                        operation->setType(VJassExpression::Substraction);
+                    } else if (bracket.getValue() == "*") {
+                        operation->setType(VJassExpression::Multiplication);
+                    } else if (bracket.getValue() == "/") {
+                        operation->setType(VJassExpression::Division);
+                    }
+
+                    i++;
+                    VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                    if (rightOperation != nullptr) {
+                        operation->addChild(rightOperation);
+                    }
+
+                    result = operation;
+                } else {
+                    ast->addError(bracket, QObject::tr("Unexpected token after integer literal: %1").arg(bracket.getValue()));
+                }
+            }
         } else if (nextToken.getType() == VJassToken::RealLiteral) {
             result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
             result->setType(VJassExpression::RealLiteral);
             result->setValue(nextToken.getValue());
 
-            // TODO Look for operators
+            const int j = i + 1;
+
+            if (!hasReachedEndOfLine(tokens, j)) {
+                const VJassToken &bracket = tokens.at(j);
+
+                if (bracket.getType() == VJassToken::Operator) {
+                    VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                    if (bracket.getValue() == "+") {
+                        operation->setType(VJassExpression::Sum);
+                    } else if (bracket.getValue() == "-") {
+                        operation->setType(VJassExpression::Substraction);
+                    } else if (bracket.getValue() == "*") {
+                        operation->setType(VJassExpression::Multiplication);
+                    } else if (bracket.getValue() == "/") {
+                        operation->setType(VJassExpression::Division);
+                    }
+
+                    i++;
+                    VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                    if (rightOperation != nullptr) {
+                        operation->addChild(rightOperation);
+                    }
+
+                    result = operation;
+                } else {
+                    ast->addError(bracket, QObject::tr("Unexpected token after integer literal: %1").arg(bracket.getValue()));
+                }
+            }
         } else if (nextToken.getType() == VJassToken::StringLiteral) {
             result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
             result->setType(VJassExpression::StringLiteral);
             result->setValue(nextToken.getValue());
 
-            // TODO Look for operators
+            const int j = i + 1;
+
+            if (!hasReachedEndOfLine(tokens, j)) {
+                const VJassToken &bracket = tokens.at(j);
+
+                if (bracket.getType() == VJassToken::Operator) {
+                    if (bracket.getValue() == "+") {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        operation->setType(VJassExpression::Sum);
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
+                    } else {
+                        ast->addError(bracket, QObject::tr("Unexpected operation after string literal: %1").arg(bracket.getValue()));
+                    }
+                } else {
+                    ast->addError(bracket, QObject::tr("Unexpected token after integer literal: %1").arg(bracket.getValue()));
+                }
+            }
         } else if (nextToken.getType() == VJassToken::TrueKeyword) {
             result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
             result->setType(VJassExpression::True);
@@ -279,16 +434,6 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
     return result;
 }
 
-}
-
-inline bool hasReachedEndOfLine(const QList<VJassToken> &tokens, int i, bool &wasLineBreak) {
-    bool result = i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak ||  tokens.at(i).getType() == VJassToken::Comment;
-
-    if (tokens.at(i).getType() == VJassToken::LineBreak) {
-        wasLineBreak = true;
-    }
-
-    return result;
 }
 
 VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {

@@ -15,4 +15,7 @@ commandline.depends = app
 tests.depends = app
 
 DISTFILES += \
-    README.md
+    README.md \
+    wc3reforged/common.j \
+    wc3reforged/common.ai \
+    wc3reforged/Blizzard.j \

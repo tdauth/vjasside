@@ -43,6 +43,9 @@ public slots:
 
     void clickPopupItem(const QModelIndex &index);
 
+    void openJASSManual();
+    void openCodeOnHive();
+
     void aboutDialog();
 
     void restartTimer();

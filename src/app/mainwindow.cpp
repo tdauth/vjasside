@@ -35,6 +35,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionEnableSyntaxHighlighting, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
     connect(ui->actionEnableSyntaxCheck, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
 
+    connect(ui->actionJASS_Manual, &QAction::triggered, this, &MainWindow::openJASSManual);
+    connect(ui->actionCodeOnHive, &QAction::triggered, this, &MainWindow::openCodeOnHive);
+
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
     // whenever the user changes the text we have to wait with our highlighting and syntax check for some time to prevent blocking the GUI all the time
@@ -287,6 +290,9 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
     // TODO Restore the selection as well.
     updateCursorPosition(position);
 
+    // reset to the default font on typing
+    ui->textEdit->document()->setDefaultFont(HighLightInfo::getNormalFont());
+
     /*
     // make sure no slots are triggered by this to prevent endless recursions
     disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
@@ -429,6 +435,14 @@ void MainWindow::clickPopupItem(const QModelIndex &index) {
     }
 
     popup->close();
+}
+
+void MainWindow::openJASSManual() {
+    QDesktopServices::openUrl(QUrl("http://jass.sourceforge.net/doc/"));
+}
+
+void MainWindow::openCodeOnHive() {
+    QDesktopServices::openUrl(QUrl("https://www.hiveworkshop.com/forums/code.718/"));
 }
 
 void MainWindow::aboutDialog() {
