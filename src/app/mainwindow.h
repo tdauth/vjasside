@@ -30,8 +30,12 @@ public slots:
     void newFile();
     void openFile();
     bool saveAs();
-    void closeFile();
+    bool closeFile();
     void quit();
+
+    void openCommonj();
+    void openCommonai();
+    void openBlizzardj();
 
     void updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight);
     void updateSyntaxErrorsOnly();

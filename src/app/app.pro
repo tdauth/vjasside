@@ -4,6 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 CONFIG += no_testcase_installs
+CONFIG += file_copies
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -61,6 +62,14 @@ HEADERS += \
 FORMS += \
     linenumbers.ui \
     mainwindow.ui
+
+COPIES += wc3reforgedscripts
+
+wc3reforgedscripts.files += $$files(../../wc3reforged/*.j) \
+                            $$files(../../wc3reforged/*.ai)
+wc3reforgedscripts.path = $$OUT_PWD/wc3reforged
+
+#message("My scripts: " + $$files(../../wc3reforged/*.j) + " copied into " + $$OUT_PWD/wc3reforged)
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

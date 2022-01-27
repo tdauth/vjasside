@@ -49,3 +49,10 @@ These are some possible upcoming features for this IDE:
 
 * [JASS Manual](http://jass.sourceforge.net/doc/)
 * [vJass Documentation](https://wc3modding.info/pages/vjass-documentation/)
+
+## History
+
+There has already been [an attempt](https://github.com/tdauth/vjasside-old-archive) to create a vJass IDE in the past around 2010.
+However, it stopped when I started studying.
+The code is still used as reference for this project or even copied.
+It had an MPQ Editor, syntax schemas, sessions, a JassHelper dialog and the integration of my tool [vjassdoc](https://github.com/tdauth/vjassdoc).

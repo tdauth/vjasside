@@ -14,31 +14,8 @@
    <string>Baradé's vJass IDE</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="1" column="0">
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="tab">
-       <attribute name="title">
-        <string>Syntax Errors</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0">
-         <widget class="QListWidget" name="outputListWidget"/>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-    <item row="0" column="0" colspan="2">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
      <widget class="QWidget" name="widget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -69,12 +46,44 @@
           </widget>
          </item>
          <item>
-          <widget class="QPlainTextEdit" name="textEdit">
-          </widget>
+          <widget class="QPlainTextEdit" name="textEdit"/>
          </item>
         </layout>
        </item>
       </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Syntax Errors</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QListWidget" name="outputListWidget"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="outliner">
+       <attribute name="title">
+        <string>Outliner</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="0" column="0">
+         <widget class="QListWidget" name="outlinerListWidget"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -139,7 +148,16 @@
     <addaction name="actionJassHelper"/>
     <addaction name="actionpjass"/>
    </widget>
+   <widget class="QMenu" name="menuStandard_Scripts">
+    <property name="title">
+     <string>Scripts</string>
+    </property>
+    <addaction name="actionCommonj"/>
+    <addaction name="actionCommonAi"/>
+    <addaction name="actionBlizzardj"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuStandard_Scripts"/>
    <addaction name="menuView"/>
    <addaction name="menuAuto_Completion"/>
    <addaction name="menuAutomaticAnalysis"/>
@@ -265,6 +283,21 @@
   <action name="actionpjass">
    <property name="text">
     <string>pjass</string>
+   </property>
+  </action>
+  <action name="actionCommonj">
+   <property name="text">
+    <string>common.j</string>
+   </property>
+  </action>
+  <action name="actionCommonAi">
+   <property name="text">
+    <string>common.ai</string>
+   </property>
+  </action>
+  <action name="actionBlizzardj">
+   <property name="text">
+    <string>Blizzard.j</string>
    </property>
   </action>
  </widget>

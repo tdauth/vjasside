@@ -25,6 +25,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionClose, &QAction::triggered, this, &MainWindow::closeFile);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
+    connect(ui->actionCommonj, &QAction::triggered, this, &MainWindow::openCommonj);
+    connect(ui->actionCommonAi, &QAction::triggered, this, &MainWindow::openCommonai);
+    connect(ui->actionBlizzardj, &QAction::triggered, this, &MainWindow::openBlizzardj);
+
     connect(ui->actionLineNumbers, &QAction::changed, this, &MainWindow::updateLineNumbersView);
     connect(ui->actionShowWhiteSpaces, &QAction::changed, this, &MainWindow::showWhiteSpaces);
 
@@ -217,11 +221,13 @@ bool MainWindow::saveAs() {
     return false;
 }
 
-void MainWindow::closeFile() {
+bool MainWindow::closeFile() {
     if (documentHasChanged) {
         if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
             if (saveAs()) {
                 ui->textEdit->clear();
+            } else {
+                return false;
             }
         } else {
             ui->textEdit->clear();
@@ -229,6 +235,8 @@ void MainWindow::closeFile() {
     } else {
         ui->textEdit->clear();
     }
+
+    return true;
 }
 
 void MainWindow::quit() {
@@ -242,6 +250,45 @@ void MainWindow::quit() {
         }
     } else {
         this->close();
+    }
+}
+
+void MainWindow::openCommonj() {
+    if (closeFile()) {
+        const QString filePath = "wc3reforged/common.j";
+        QFile f(filePath);
+
+        if (f.open(QIODevice::ReadOnly)) {
+            ui->textEdit->document()->setPlainText(f.readAll());
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
+        }
+    }
+}
+
+void MainWindow::openCommonai() {
+    if (closeFile()) {
+        const QString filePath = "wc3reforged/common.ai";
+        QFile f(filePath);
+
+        if (f.open(QIODevice::ReadOnly)) {
+            ui->textEdit->document()->setPlainText(f.readAll());
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
+        }
+    }
+}
+
+void MainWindow::openBlizzardj() {
+    if (closeFile()) {
+        const QString filePath = "wc3reforged/Blizzard.j";
+        QFile f(filePath);
+
+        if (f.open(QIODevice::ReadOnly)) {
+            ui->textEdit->document()->setPlainText(f.readAll());
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
+        }
     }
 }
 
