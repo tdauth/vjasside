@@ -410,7 +410,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                         ast->addError(bracket, QObject::tr("Unexpected operation after string literal: %1").arg(bracket.getValue()));
                     }
                 } else {
-                    ast->addError(bracket, QObject::tr("Unexpected token after integer literal: %1").arg(bracket.getValue()));
+                    ast->addError(bracket, QObject::tr("Unexpected token after string literal: %1").arg(bracket.getValue()));
                 }
             }
         } else if (nextToken.getType() == VJassToken::TrueKeyword) {
@@ -559,7 +559,7 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                             i++;
 
                             // has assignment
-                            if (i >= tokens.size() || tokens.at(i).getType() == VJassToken::LineBreak) {
+                            if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                                 if (global->getIsConstant()) {
                                     global->addErrorAtEndOf(nameToken, QObject::tr("Constants require assignment."));
                                 }
@@ -574,6 +574,8 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                                     global->addErrorAtEndOf(assignmentOperatorToken, QObject::tr("Assignments of global array variables are not allowed."));
                                 } else {
                                     parseExpression(tokens, assignmentOperatorToken, global, i);
+
+                                    hasReachedEndOfLine(tokens, i, wasLineBreak); // check for the line break
                                 }
                             }
                         }

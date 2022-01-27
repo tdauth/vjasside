@@ -230,7 +230,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                     }
                 }
 
-                const int length = j - i;
+                const int length = j - i + 1; // consume the second double quotes as well
 
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::StringLiteral));
 
