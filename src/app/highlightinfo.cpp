@@ -5,6 +5,9 @@
 HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast) : textDocument(new QTextDocument(text))
 {
     textDocument->setDocumentLayout(new QPlainTextDocumentLayout(textDocument));
+    textDocument->setDefaultFont(getNormalFont());
+    textDocument->setIndentWidth(20.0);
+    //textDocument->setDefaultTextOption(QTextOption::)
 
     qDebug() << "Getting tokens" << tokens.size();
 
