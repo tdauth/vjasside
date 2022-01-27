@@ -57,6 +57,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
     connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outputListItemDoubleClicked);
+
+    // outliner
+
+    connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxTypes, &QCheckBox::setChecked);
+    connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxNatives, &QCheckBox::setChecked);
+    connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxConstants, &QCheckBox::setChecked);
+    connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxGlobals, &QCheckBox::setChecked);
+    connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxFunctions, &QCheckBox::setChecked);
+
+    connect(ui->checkBoxTypes, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
+    connect(ui->checkBoxNatives, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
+    connect(ui->checkBoxConstants, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
+    connect(ui->checkBoxGlobals, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
+    connect(ui->checkBoxFunctions, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
+
     connect(ui->outlinerListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outlinerListItemDoubleClicked);
 
     // basic settings for text
@@ -149,6 +164,11 @@ MainWindow::~MainWindow()
     scanAndParseThread->wait();
     delete scanAndParseThread;
     scanAndParseThread = nullptr;
+
+    for (VJassAst *a : astElements) {
+        delete a;
+        a = nullptr;
+    }
 }
 
 void MainWindow::newFile() {
@@ -455,14 +475,15 @@ void MainWindow::updateLineNumbers() {
 
     const int startLine = startCursor.blockNumber();
     const int visibleLines = bottomCursor.blockNumber() - startCursor.blockNumber() + 1;
+    //const int visibleLines = ui->textEdit->height() / ui->textEdit->fontMetrics().height();
 
-    //qDebug() << "Visible lines" << visibleLines << "starting at" << startLine;
+    qDebug() << "Visible lines" << visibleLines << "starting at" << startLine;
 
     QList<qreal> lineHeights;
 
     for (int i = 0; i < visibleLines; i++) {
         const qreal lineHeight = ui->textEdit->document()->documentLayout()->blockBoundingRect(startCursor.block()).height(); // TODO is 0 before anything happens
-        lineHeights.push_back(qMax<qreal>(16, lineHeight)); // since it can be set a min height
+        lineHeights.push_back(lineHeight); // since it can be set a min height
         //lineHeights.push_back(startCursor.blockFormat().lineHeight());
         //lineHeights.push_back(startCursor.charFormat().font().pointSizeF());
         startCursor.movePosition(QTextCursor::Down);
@@ -578,6 +599,27 @@ void MainWindow::clearAllHighLighting() {
     //connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 }
 
+void MainWindow::updateOutliner() {
+    ui->outlinerListWidget->clear();
+
+    for (const VJassAst *astElement : astElements) {
+        const QString text = astElement->toString();
+
+        if ((text.startsWith(VJassToken::KEYWORD_NATIVE) && ui->checkBoxNatives->isChecked())) {
+            QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
+            item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
+            ui->outlinerListWidget->addItem(item);
+        }
+    }
+
+    if (ui->outlinerListWidget->count() == 0) {
+        ui->outlinerListWidget->addItem(tr("Nothing to outline."));
+        ui->tabWidget->setTabText(1, tr("0 Elements"));
+    } else {
+        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", astElements.length()));
+    }
+}
+
 void MainWindow::timerEvent(QTimerEvent *event) {
     // the user input timer finishes, so the user has stopped writing for some time, let's send the finished text to the thread for handling.
     if (event->timerId() == timerId) {
@@ -631,25 +673,23 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                         ui->tabWidget->setTabText(0, tr("%n Syntax Errors", "%n Syntax Error", parseErrors.length()));
                     }
 
-                    // update elements output widget
+                    VJassAst *ast = scanAndParseResults->ast;
+                    scanAndParseResults->ast = nullptr; // prevents deletion
+
+                    // update outliner
                     ui->outlinerListWidget->clear();
 
-                    const QList<VJassAst*> &astElements = scanAndParseResults->highLightInfo.getAstElements();
-
-                    for (const VJassAst *astElement : astElements) {
-                        QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
-                        item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
-                        ui->outlinerListWidget->addItem(item);
+                    for (VJassAst *a : astElements) {
+                        delete a;
+                        a = nullptr;
                     }
 
-                    if (ui->outlinerListWidget->count() == 0) {
-                        ui->outlinerListWidget->addItem(tr("Nothing to outline."));
-                        ui->tabWidget->setTabText(1, tr("0 Elements"));
-                    } else {
-                        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", astElements.length()));
-                    }
+                    astElements.clear();
+                    astElements = scanAndParseResults->highLightInfo.getAstElements();
 
-                    if (autoComplete && scanAndParseResults->ast->getCodeCompletionSuggestions().size() > 0) {
+                    updateOutliner();
+
+                    if (autoComplete && ast->getCodeCompletionSuggestions().size() > 0) {
                         popup->clear();
                         popup->setFocusProxy(this);
                         QTreeWidgetItem *firstItem = nullptr;

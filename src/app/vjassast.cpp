@@ -129,3 +129,15 @@ QString VJassAst::toString() const {
 
     return result;
 }
+
+void VJassAst::sortByPosition(QList<VJassAst*> &list) {
+    std::sort(list.begin(), list.end(), [](VJassAst *e1, VJassAst *e2) {
+       const int lineDiff = e2->getLine() - e1->getLine();
+
+       if (lineDiff == 0) {
+           return e2->getColumn() - e1->getColumn();
+       }
+
+       return lineDiff;
+    });
+}

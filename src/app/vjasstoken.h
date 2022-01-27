@@ -119,8 +119,8 @@ public:
 
 private:
     QString value;
-    int line;
-    int column;
+    int line = 0;
+    int column = 0;
     Type type;
 
     // cached stuff for faster access

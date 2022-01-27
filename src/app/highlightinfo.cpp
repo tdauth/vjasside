@@ -115,6 +115,9 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
                 stack.push_back(child);
             }
         }
+
+        // TODO segmentation fault
+        //VJassAst::sortByPosition(astElements);
     }
 
     // This is the slow method creating all the extra selections!
