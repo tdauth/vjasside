@@ -17,6 +17,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     syntaxhighlighter.cpp \
+    textedit.cpp \
     vjassast.cpp \
     vjassexpression.cpp \
     vjassfunction.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     linenumbers.h \
     mainwindow.h \
     syntaxhighlighter.h \
+    textedit.h \
     vjassast.h \
     vjassexpression.h \
     vjassfunction.h \
@@ -61,7 +63,8 @@ HEADERS += \
 
 FORMS += \
     linenumbers.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    textedit.ui
 
 COPIES += wc3reforgedscripts
 
