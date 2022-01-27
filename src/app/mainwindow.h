@@ -66,6 +66,7 @@ private slots:
     void updateCursorPosition(int position);
     void highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax);
     void outputListItemDoubleClicked(QListWidgetItem *item);
+    void outlinerListItemDoubleClicked(QListWidgetItem *item);
 
     void clearAllHighLighting();
 

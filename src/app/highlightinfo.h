@@ -81,6 +81,7 @@ public:
     QList<QTextEdit::ExtraSelection> toExtraSelections(QTextDocument *textDocument, bool checkSyntax) const;
     QTextDocument* getTextDocument() const;
     const QList<VJassParseError>& getParseErrors() const;
+    const QList<VJassAst*>& getAstElements() const;
 
     static QFont getNormalFont();
     static void applyNormalFormat(QTextCharFormat &textCharFormat);
@@ -93,6 +94,7 @@ private:
     QTextDocument *textDocument;
     QList<QTextEdit::ExtraSelection> extraSelections;
     QList<VJassParseError> parseErrors;
+    QList<VJassAst*> astElements;
 };
 
 inline bool operator<(const HighLightInfo::Location &e1, const HighLightInfo::Location &e2) {

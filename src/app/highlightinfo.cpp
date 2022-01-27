@@ -205,6 +205,10 @@ const QList<VJassParseError>& HighLightInfo::getParseErrors() const {
     return parseErrors;
 }
 
+const QList<VJassAst*>& HighLightInfo::getAstElements() const {
+    return astElements;
+}
+
 HighLightInfo::CustomTextCharFormat& HighLightInfo::getCustomTextCharFormat(int line, int column) {
     const Location key = Location(line, column);
 

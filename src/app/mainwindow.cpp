@@ -57,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
     connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outputListItemDoubleClicked);
+    connect(ui->outlinerListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outlinerListItemDoubleClicked);
 
     // basic settings for text
     ui->textEdit->setFont(HighLightInfo::getNormalFont());
@@ -395,6 +396,22 @@ void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
     }
 }
 
+void MainWindow::outlinerListItemDoubleClicked(QListWidgetItem *item) {
+    if (item->data(Qt::UserRole).isValid() && item->data(Qt::UserRole).canConvert<QPoint>()) {
+        int line = item->data(Qt::UserRole).toPoint().x();
+        int column = item->data(Qt::UserRole).toPoint().y();
+
+        QTextCursor cursor(ui->textEdit->document());
+        cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
+        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line);
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, column);
+        ui->textEdit->setTextCursor(cursor);
+        ui->textEdit->setFocus();
+
+        qDebug() << "Moving cursor to line" << line << "and column" << column;
+    }
+}
+
 void MainWindow::updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight) {
     this->expectAutoComplete = autoComplete;
 
@@ -596,6 +613,7 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                 }
 
                 if (checkSyntax || autoComplete) {
+                    // update syntax errors output widget
                     ui->outputListWidget->clear();
 
                     const QList<VJassParseError> &parseErrors = scanAndParseResults->highLightInfo.getParseErrors();
@@ -611,6 +629,24 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                         ui->tabWidget->setTabText(0, tr("0 Syntax Errors"));
                     } else {
                         ui->tabWidget->setTabText(0, tr("%n Syntax Errors", "%n Syntax Error", parseErrors.length()));
+                    }
+
+                    // update elements output widget
+                    ui->outlinerListWidget->clear();
+
+                    const QList<VJassAst*> &astElements = scanAndParseResults->highLightInfo.getAstElements();
+
+                    for (const VJassAst *astElement : astElements) {
+                        QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %1 and column %2").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
+                        item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
+                        ui->outlinerListWidget->addItem(item);
+                    }
+
+                    if (ui->outlinerListWidget->count() == 0) {
+                        ui->outlinerListWidget->addItem(tr("Nothing to outline."));
+                        ui->tabWidget->setTabText(1, tr("0 Elements"));
+                    } else {
+                        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", astElements.length()));
                     }
 
                     if (autoComplete && scanAndParseResults->ast->getCodeCompletionSuggestions().size() > 0) {
