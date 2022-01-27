@@ -123,7 +123,7 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
                                     const VJassToken &parameterName = tokens.at(i + 1);
 
                                     if (parameterName.isValidIdentifier()) {
-                                        vjassFunction->addParameter(parameterType.getValue(), parameterName.getValue());
+                                        vjassFunction->addParameter(parameterType.getLine(), parameterType.getColumn(), parameterType.getValue(), parameterName.getValue());
                                     } else {
                                         vjassFunction->addErrorAtEndOf(parameterName, "Invalid parameter name: " + parameterName.getValue());
                                         gotError = true;

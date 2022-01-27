@@ -637,7 +637,7 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                     const QList<VJassAst*> &astElements = scanAndParseResults->highLightInfo.getAstElements();
 
                     for (const VJassAst *astElement : astElements) {
-                        QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %1 and column %2").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
+                        QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
                         item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
                         ui->outlinerListWidget->addItem(item);
                     }

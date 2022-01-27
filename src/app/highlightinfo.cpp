@@ -1,5 +1,6 @@
 #include <QtCore>
 
+#include "vjassnative.h"
 #include "highlightinfo.h"
 
 HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast) : textDocument(new QTextDocument(text))
@@ -98,6 +99,22 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
            }
         });
         */
+
+        // store all AST elements for the outliner
+        QStack<VJassAst*> stack;
+        stack.push_back(ast);
+
+        while (!stack.isEmpty()) {
+            VJassAst *a = stack.pop();
+
+            if (typeid(*a) == typeid(VJassNative)) {
+                astElements.push_back(a);
+            }
+
+            for (VJassAst *child : a->getChildren()) {
+                stack.push_back(child);
+            }
+        }
     }
 
     // This is the slow method creating all the extra selections!
