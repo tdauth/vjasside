@@ -3,7 +3,6 @@
 
 #include <QSyntaxHighlighter>
 
-
 class SyntaxHighlighter : public QSyntaxHighlighter
 {
 public:

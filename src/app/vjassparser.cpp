@@ -247,7 +247,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
                 // skip the right bracket
                 if (rightBracketIndex != -1 && i < rightBracketIndex) {
-                    i++;
+                    i = rightBracketIndex; // TODO rightBracketIndex + 1
                 }
             }
         // operator

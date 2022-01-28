@@ -2,7 +2,7 @@
 
 #include "highlightinfo.h"
 
-HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast) : textDocument(new QTextDocument(text))
+HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, bool createTextDocument) : textDocument(new QTextDocument(text))
 {
     textDocument->setDocumentLayout(new QPlainTextDocumentLayout(textDocument));
     textDocument->setDefaultFont(getNormalFont());
@@ -100,40 +100,44 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         */
     }
 
-    // This is the slow method creating all the extra selections!
-    // TODO This is the really slow part because of the iteration with the cursors. It might take about 30 seconds or longer.
-    qDebug() << "Beginning highlighting code elements with elements size:" << getFormattedLocations().size();
-    QElapsedTimer timer;
-    timer.start();
+    if (createTextDocument) {
+        // This is the slow method creating all the extra selections!
+        // TODO This is the really slow part because of the iteration with the cursors. It might take about 30 seconds or longer.
+        // TODO If we use QSyntaxHighlighter properly, we can get rid of this stuff?
+        qDebug() << "Beginning highlighting code elements with elements size:" << getFormattedLocations().size();
+        QElapsedTimer timer;
+        timer.start();
 
-    // The text document has signals such as "cursorPositionChanged" etc. we do not need to be emitted here.
-    QSignalBlocker signalBlockerTextDocument(textDocument);
+        // The text document has signals such as "cursorPositionChanged" etc. we do not need to be emitted here.
+        QSignalBlocker signalBlockerTextDocument(textDocument);
 
-    for (auto iterator = customTextCharFormats.constKeyValueBegin(); iterator != customTextCharFormats.constKeyValueEnd(); ++iterator) {
-        const Location &location = iterator->first;
-        const CustomTextCharFormat &customTextCharFormat = iterator->second;
+        for (auto iterator = customTextCharFormats.constKeyValueBegin(); iterator != customTextCharFormats.constKeyValueEnd(); ++iterator) {
+            const Location &location = iterator->first;
+            const CustomTextCharFormat &customTextCharFormat = iterator->second;
 
-        // move a cursor to the character
-        //QTextCursor cursor(textDocument);
-        QTextCursor cursor(textDocument);
-        //QSignalBlocker signalBlockerTextCursor(&cursor);
-        cursor.setPosition(0, QTextCursor::MoveAnchor);
-        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
-        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);
+            // move a cursor to the character
+            //QTextCursor cursor(textDocument);
+            QTextCursor cursor(textDocument);
+            //QSignalBlocker signalBlockerTextCursor(&cursor);
+            cursor.setPosition(0, QTextCursor::MoveAnchor);
+            cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
+            cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);
 
-        // format all characters
-        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
-        QTextCharFormat fmt = getNormalFormat();
-        customTextCharFormat.applyToTextCharFormat(fmt, ast != nullptr);
-        cursor.setCharFormat(fmt); // for bold it is required that the cursor has the format
+            // format all characters
+            // TODO This might be the slow part.
+            cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
+            QTextCharFormat fmt = getNormalFormat();
+            customTextCharFormat.applyToTextCharFormat(fmt, ast != nullptr);
+            cursor.setCharFormat(fmt); // for bold it is required that the cursor has the format
 
-        QTextEdit::ExtraSelection extraSelection;
-        extraSelection.cursor = cursor;
-        extraSelection.format = fmt;
-        extraSelections.push_back(extraSelection);
+            QTextEdit::ExtraSelection extraSelection;
+            extraSelection.cursor = cursor;
+            extraSelection.format = fmt;
+            extraSelections.push_back(extraSelection);
+        }
+
+        qDebug() << "Ending highlighting code elements with elements size:" << getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
     }
-
-    qDebug() << "Ending highlighting code elements with elements size:" << getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
 }
 
 void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat &fmt, bool checkSyntax) const {
