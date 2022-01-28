@@ -46,8 +46,7 @@
           </widget>
          </item>
          <item>
-          <widget class="TextEdit" name="textEdit">
-          </widget>
+          <widget class="TextEdit" name="textEdit"/>
          </item>
         </layout>
        </item>
@@ -245,9 +244,16 @@
     <addaction name="actionCommonAi"/>
     <addaction name="actionBlizzardj"/>
    </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionGoToLine"/>
+   </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuStandard_Scripts"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuView"/>
+   <addaction name="menuStandard_Scripts"/>
    <addaction name="menuAuto_Completion"/>
    <addaction name="menuAutomaticAnalysis"/>
    <addaction name="menuSettings"/>
@@ -387,6 +393,14 @@
   <action name="actionBlizzardj">
    <property name="text">
     <string>Blizzard.j</string>
+   </property>
+  </action>
+  <action name="actionGoToLine">
+   <property name="text">
+    <string>Got to Line</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
    </property>
   </action>
  </widget>

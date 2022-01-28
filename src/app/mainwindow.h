@@ -33,6 +33,8 @@ public slots:
     bool closeFile();
     void quit();
 
+    void goToLine();
+
     void openCommonj();
     void openCommonai();
     void openBlizzardj();

@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionClose, &QAction::triggered, this, &MainWindow::closeFile);
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
+    connect(ui->actionGoToLine, &QAction::triggered, this, &MainWindow::goToLine);
+
     connect(ui->actionCommonj, &QAction::triggered, this, &MainWindow::openCommonj);
     connect(ui->actionCommonAi, &QAction::triggered, this, &MainWindow::openCommonai);
     connect(ui->actionBlizzardj, &QAction::triggered, this, &MainWindow::openBlizzardj);
@@ -271,6 +273,19 @@ void MainWindow::quit() {
         }
     } else {
         this->close();
+    }
+}
+
+void MainWindow::goToLine() {
+    bool ok = false;
+    const int line = QInputDialog::getInt(this, tr("Go to Line"), tr("Line"), ui->textEdit->textCursor().blockNumber(), 1, ui->textEdit->blockCount(), 1, &ok);
+
+    if (ok) {
+        QTextCursor textCursor = ui->textEdit->textCursor();
+        textCursor.movePosition(QTextCursor::Start);
+        textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line - 1);
+        ui->textEdit->setTextCursor(textCursor);
+        updateLineNumbers();
     }
 }
 
