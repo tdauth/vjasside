@@ -14,10 +14,10 @@ SOURCES += \
     autocompletionpopup.cpp \
     highlightinfo.cpp \
     linenumbers.cpp \
+    textedit.cpp \
     main.cpp \
     mainwindow.cpp \
     syntaxhighlighter.cpp \
-    textedit.cpp \
     vjassast.cpp \
     vjassexpression.cpp \
     vjassfunction.cpp \
@@ -40,9 +40,9 @@ HEADERS += \
     autocompletionpopup.h \
     highlightinfo.h \
     linenumbers.h \
+    textedit.h \
     mainwindow.h \
     syntaxhighlighter.h \
-    textedit.h \
     vjassast.h \
     vjassexpression.h \
     vjassfunction.h \

@@ -45,14 +45,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
     // whenever the user changes the text we have to wait with our highlighting and syntax check for some time to prevent blocking the GUI all the time
-    connect(ui->textEdit->getPlainTextEdit(), &QPlainTextEdit::textChanged, this, &MainWindow::restartTimer);
-    connect(ui->textEdit->getPlainTextEdit(), &QPlainTextEdit::textChanged, this, &MainWindow::documentChanges);
+    connect(ui->textEdit, &QPlainTextEdit::textChanged, this, &MainWindow::restartTimer);
+    connect(ui->textEdit, &QPlainTextEdit::textChanged, this, &MainWindow::documentChanges);
 
     // whenever the user changes the view we have to update the line numbers
-    connect(ui->textEdit->getPlainTextEdit()->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
-    connect(ui->textEdit->getPlainTextEdit()->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
+    connect(ui->textEdit->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
+    connect(ui->textEdit->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
 
-    connect(ui->textEdit->getPlainTextEdit(), &QPlainTextEdit::cursorPositionChanged, this, &MainWindow::updateSelectedLines);
+    connect(ui->textEdit, &QPlainTextEdit::cursorPositionChanged, this, &MainWindow::updateSelectedLines);
 
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
@@ -75,18 +75,18 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->outlinerListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outlinerListItemDoubleClicked);
 
     // basic settings for text
-    ui->textEdit->getPlainTextEdit()->setFont(HighLightInfo::getNormalFont());
-    ui->textEdit->getPlainTextEdit()->setTabStopDistance(20.0);
+    ui->textEdit->setFont(HighLightInfo::getNormalFont());
+    ui->textEdit->setTabStopDistance(20.0);
 
     // initial line
     // move cursor to start to edit the document
-    ui->textEdit->getPlainTextEdit()->setFocus();
+    ui->textEdit->setFocus();
     updateCursorPosition(0);
 
     updateLineNumbersView();
     updateLineNumbers();
 
-    syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->getPlainTextEdit()->document());
+    syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
 
     /*
      * Scan, parse and prestore highlighting information concurrently to avoid blocking the GUI.
@@ -175,14 +175,14 @@ void MainWindow::newFile() {
     if (documentHasChanged) {
         if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
             if (saveAs()) {
-                ui->textEdit->getPlainTextEdit()->clear();
+                ui->textEdit->clear();
 
                 documentHasChanged = false;
                 updateWindowTitle();
             }
         }
     } else {
-        ui->textEdit->getPlainTextEdit()->clear();
+        ui->textEdit->clear();
     }
 }
 
@@ -208,7 +208,7 @@ void MainWindow::openFile() {
             fileDir = fileInfo.absoluteDir().path();
 
             if (f.open(QIODevice::ReadOnly)) {
-                this->ui->textEdit->getPlainTextEdit()->document()->setPlainText(f.readAll());
+                this->ui->textEdit->document()->setPlainText(f.readAll());
 
                 documentHasChanged = false;
                 updateWindowTitle();
@@ -228,7 +228,7 @@ bool MainWindow::saveAs() {
         fileDir = fileInfo.absoluteDir().path();
 
         if (f.open(QIODevice::WriteOnly)) {
-            f.write(ui->textEdit->getPlainTextEdit()->toPlainText().toUtf8());
+            f.write(ui->textEdit->toPlainText().toUtf8());
 
             documentHasChanged = false;
             updateWindowTitle();
@@ -246,15 +246,15 @@ bool MainWindow::closeFile() {
     if (documentHasChanged) {
         if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
             if (saveAs()) {
-                ui->textEdit->getPlainTextEdit()->clear();
+                ui->textEdit->clear();
             } else {
                 return false;
             }
         } else {
-            ui->textEdit->getPlainTextEdit()->clear();
+            ui->textEdit->clear();
         }
     } else {
-        ui->textEdit->getPlainTextEdit()->clear();
+        ui->textEdit->clear();
     }
 
     return true;
@@ -280,7 +280,7 @@ void MainWindow::openCommonj() {
         QFile f(filePath);
 
         if (f.open(QIODevice::ReadOnly)) {
-            ui->textEdit->getPlainTextEdit()->document()->setPlainText(f.readAll());
+            ui->textEdit->document()->setPlainText(f.readAll());
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
         }
@@ -293,7 +293,7 @@ void MainWindow::openCommonai() {
         QFile f(filePath);
 
         if (f.open(QIODevice::ReadOnly)) {
-            ui->textEdit->getPlainTextEdit()->document()->setPlainText(f.readAll());
+            ui->textEdit->document()->setPlainText(f.readAll());
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
         }
@@ -306,7 +306,7 @@ void MainWindow::openBlizzardj() {
         QFile f(filePath);
 
         if (f.open(QIODevice::ReadOnly)) {
-            ui->textEdit->getPlainTextEdit()->document()->setPlainText(f.readAll());
+            ui->textEdit->document()->setPlainText(f.readAll());
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
         }
@@ -314,13 +314,13 @@ void MainWindow::openBlizzardj() {
 }
 
 void MainWindow::updateCursorPosition(int position) {
-    QTextCursor startCursor = ui->textEdit->getPlainTextEdit()->textCursor();
+    QTextCursor startCursor = ui->textEdit->textCursor();
     startCursor.setCharFormat(HighLightInfo::getNormalFormat());
     startCursor.setPosition(position);
     startCursor.beginEditBlock();
     startCursor.endEditBlock();
-    ui->textEdit->getPlainTextEdit()->setTextCursor(startCursor);
-    ui->textEdit->getPlainTextEdit()->setTabStopDistance(20.0);
+    ui->textEdit->setTextCursor(startCursor);
+    ui->textEdit->setTabStopDistance(20.0);
 }
 
 /**
@@ -328,10 +328,8 @@ void MainWindow::updateCursorPosition(int position) {
  *
  * @param highLightInfo Contains a highlighted text document which will replace the current one.
  */
-void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool /* checkSyntax */) {
-    // TODO this method is slow as hell! Improve its speed! Probably too many tokens!
-    // TODO We could try to format a text edit and replace our text edit by the highlighting thread.
-    // TODO We can also use setExtraSelections(const QList<QTextEdit::ExtraSelection> &selections) or QSyntaxHighlighter for maybe faster approaches.
+void MainWindow::highlightTokensAndAst(const HighLightInfo & /* highLightInfo */, bool /* checkSyntax */) {
+    /*
     qDebug() << "Beginning highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size();
     QElapsedTimer timer;
     timer.start();
@@ -360,6 +358,9 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
 
     // reset to the default font on typing
     ui->textEdit->getPlainTextEdit()->document()->setDefaultFont(HighLightInfo::getNormalFont());
+
+    qDebug() << "Ending highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
+    */
 
     /*
     // make sure no slots are triggered by this to prevent endless recursions
@@ -396,8 +397,6 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo &highLightInfo, bool 
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
     */
-
-    qDebug() << "Ending highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
 }
 
 void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
@@ -405,12 +404,12 @@ void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
         int line = item->data(Qt::UserRole).toPoint().x();
         int column = item->data(Qt::UserRole).toPoint().y();
 
-        QTextCursor cursor(ui->textEdit->getPlainTextEdit()->document());
+        QTextCursor cursor(ui->textEdit->document());
         cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
         cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line);
         cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, column);
-        ui->textEdit->getPlainTextEdit()->setTextCursor(cursor);
-        ui->textEdit->getPlainTextEdit()->setFocus();
+        ui->textEdit->setTextCursor(cursor);
+        ui->textEdit->setFocus();
 
         qDebug() << "Moving cursor to line" << line << "and column" << column;
     }
@@ -421,12 +420,12 @@ void MainWindow::outlinerListItemDoubleClicked(QListWidgetItem *item) {
         int line = item->data(Qt::UserRole).toPoint().x();
         int column = item->data(Qt::UserRole).toPoint().y();
 
-        QTextCursor cursor(ui->textEdit->getPlainTextEdit()->document());
+        QTextCursor cursor(ui->textEdit->document());
         cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
         cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line);
         cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, column);
-        ui->textEdit->getPlainTextEdit()->setTextCursor(cursor);
-        ui->textEdit->getPlainTextEdit()->setFocus();
+        ui->textEdit->setTextCursor(cursor);
+        ui->textEdit->setFocus();
 
         qDebug() << "Moving cursor to line" << line << "and column" << column;
     }
@@ -462,15 +461,15 @@ void MainWindow::showWhiteSpaces() {
         option.setFlags(option.flags() & QTextOption::ShowLineAndParagraphSeparators & QTextOption::ShowTabsAndSpaces);
     }
 
-    ui->textEdit->getPlainTextEdit()->document()->setDefaultTextOption(option);
+    ui->textEdit->document()->setDefaultTextOption(option);
 }
 
 void MainWindow::updateLineNumbers() {
-    QTextCursor startCursor = ui->textEdit->getPlainTextEdit()->cursorForPosition(QPoint(0, 0));
+    QTextCursor startCursor = ui->textEdit->cursorForPosition(QPoint(0, 0));
     //const int start_pos = startCursor.position();
-    const QPoint bottom_right(ui->textEdit->getPlainTextEdit()->viewport()->width() - 1, ui->textEdit->getPlainTextEdit()->viewport()->height() - 1);
+    const QPoint bottom_right(ui->textEdit->viewport()->width() - 1, ui->textEdit->viewport()->height() - 1);
     //const QPoint bottom_right(ui->textEdit->viewport()->width(), ui->textEdit->viewport()->height());
-    QTextCursor bottomCursor = ui->textEdit->getPlainTextEdit()->cursorForPosition(bottom_right);
+    QTextCursor bottomCursor = ui->textEdit->cursorForPosition(bottom_right);
     //const int end_pos = ui->textEdit->cursorForPosition(bottom_right).position();
 
     const int startLine = startCursor.blockNumber();
@@ -482,7 +481,7 @@ void MainWindow::updateLineNumbers() {
     QList<qreal> lineHeights;
 
     for (int i = 0; i < visibleLines; i++) {
-        const qreal lineHeight = ui->textEdit->getPlainTextEdit()->document()->documentLayout()->blockBoundingRect(startCursor.block()).height(); // TODO is 0 before anything happens
+        const qreal lineHeight = ui->textEdit->document()->documentLayout()->blockBoundingRect(startCursor.block()).height(); // TODO is 0 before anything happens
         lineHeights.push_back(lineHeight); // since it can be set a min height
         //lineHeights.push_back(startCursor.blockFormat().lineHeight());
         //lineHeights.push_back(startCursor.charFormat().font().pointSizeF());
@@ -497,8 +496,8 @@ void MainWindow::clickPopupItem(const QModelIndex &index) {
     const QString &keyword = index.data().toString();
 
     // backtrack and check if the start of the data is already there and only append missing stuff
-    QTextCursor cursor(ui->textEdit->getPlainTextEdit()->document());
-    const int start = ui->textEdit->getPlainTextEdit()->textCursor().position();
+    QTextCursor cursor(ui->textEdit->document());
+    const int start = ui->textEdit->textCursor().position();
     cursor.setPosition(start);
     bool found = false;
 
@@ -516,7 +515,7 @@ void MainWindow::clickPopupItem(const QModelIndex &index) {
 
     // backtracking did not replace anything, so just add the text
     if (!found) {
-        ui->textEdit->getPlainTextEdit()->insertPlainText(keyword);
+        ui->textEdit->insertPlainText(keyword);
     }
 
     popup->close();
@@ -561,15 +560,15 @@ void MainWindow::updateWindowTitle() {
 }
 
 void MainWindow::updateSelectedLines() {
-    const int selectionStart = ui->textEdit->getPlainTextEdit()->textCursor().selectionStart();
-    const int selectionEnd = ui->textEdit->getPlainTextEdit()->textCursor().selectionEnd();
-    const int lineStart = ui->textEdit->getPlainTextEdit()->textCursor().document()->findBlock(selectionStart).blockNumber();
-    const int lineEnd = ui->textEdit->getPlainTextEdit()->textCursor().document()->findBlock(selectionEnd).blockNumber();
+    const int selectionStart = ui->textEdit->textCursor().selectionStart();
+    const int selectionEnd = ui->textEdit->textCursor().selectionEnd();
+    const int lineStart = ui->textEdit->textCursor().document()->findBlock(selectionStart).blockNumber();
+    const int lineEnd = ui->textEdit->textCursor().document()->findBlock(selectionEnd).blockNumber();
 
     ui->lineNumbersWidget->updateSelectedLines(lineStart, lineEnd);
 
-    const int currentColumn = ui->textEdit->getPlainTextEdit()->textCursor().positionInBlock();
-    const int currentLine = ui->textEdit->getPlainTextEdit()->textCursor().blockNumber();
+    const int currentColumn = ui->textEdit->textCursor().positionInBlock();
+    const int currentLine = ui->textEdit->textCursor().blockNumber();
 
     statusBar()->showMessage(tr("Column: %1, Line: %2").arg(currentColumn + 1).arg(currentLine + 1));
 }
@@ -586,8 +585,8 @@ void MainWindow::clearAllHighLighting() {
     //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 
-    QSignalBlocker signalBlocker(ui->textEdit->getPlainTextEdit());
-    QTextCursor cursor(ui->textEdit->getPlainTextEdit()->document());
+    QSignalBlocker signalBlocker(ui->textEdit);
+    QTextCursor cursor(ui->textEdit->document());
     QTextCharFormat fmtNormal;
     fmtNormal.setBackground(Qt::white);
     fmtNormal.setFontWeight(QFont::Normal);
@@ -626,7 +625,7 @@ void MainWindow::timerEvent(QTimerEvent *event) {
         timerId = 0; // set to 0 so the other timer will fetch from now on
 
         // create a deep copy to avoid data races
-        QString text = ui->textEdit->getPlainTextEdit()->toPlainText();
+        QString text = ui->textEdit->toPlainText();
         text.detach();
 
         qDebug() << "Finished user input timer and storing text with length" << text.length() << "for the scan and parser thread";
@@ -702,10 +701,10 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                             }
                         }
 
-                        qDebug() << "Bottom right 1:" << ui->textEdit, ui->textEdit->getPlainTextEdit()->cursorRect().bottomRight();
-                        qDebug() << "Bottom right 2:" << ui->textEdit->mapToGlobal(ui->textEdit->getPlainTextEdit()->cursorRect().bottomRight());
+                        qDebug() << "Bottom right 1:" << ui->textEdit, ui->textEdit->cursorRect().bottomRight();
+                        qDebug() << "Bottom right 2:" << ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight());
 
-                        popup->move(ui->textEdit->getPlainTextEdit()->mapToGlobal(ui->textEdit->getPlainTextEdit()->cursorRect().bottomRight()));
+                        popup->move(ui->textEdit->mapToGlobal(ui->textEdit->cursorRect().bottomRight()));
                         // preselect first entry
                         popup->setCurrentItem(firstItem);
 

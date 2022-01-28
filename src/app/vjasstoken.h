@@ -44,6 +44,13 @@ public:
     const static QSet<QString> COMMONJ_TYPES_ALL;
     const static QSet<QString> COMMONJ_NATIVES_ALL;
     const static QSet<QString> COMMONJ_CONSTANTS_ALL;
+    const static QSet<QString> BLIZZARDJ_CONSTANTS_ALL;
+    const static QSet<QString> BLIZZARDJ_GLOBALS_ALL;
+    const static QSet<QString> BLIZZARDJ_FUNCTIONS_ALL;
+    const static QSet<QString> COMMONAI_NATIVES_ALL;
+    const static QSet<QString> COMMONAI_CONSTANTS_ALL;
+    const static QSet<QString> COMMONAI_GLOBALS_ALL;
+    const static QSet<QString> COMMONAI_FUNCTIONS_ALL;
 
     const static QRegularExpression IDENTIFIER_REGEX;
 
@@ -113,9 +120,17 @@ public:
     static VJassToken::Type typeFromKeyword(const QString &keyword);
 
     int getValueLength() const;
+
     bool isCommonJType() const;
     bool isCommonJNative() const;
     bool isCommonJConstant() const;
+    bool isBlizzardJConstant() const;
+    bool isBlizzardJGlobal() const;
+    bool isBlizzardJFunction() const;
+    bool isCommonAINative() const;
+    bool isCommonAIConstant() const;
+    bool isCommonAIGlobal() const;
+    bool isCommonAIFunction() const;
 
 private:
     QString value;
@@ -125,9 +140,22 @@ private:
 
     // cached stuff for faster access
     int valueLengthCached;
-    bool isCommonJTypeCached;
-    bool isCommonJNativeCached;
-    bool isCommonJConstantCached;
+
+    enum CachedType {
+        NONE,
+        COMMONJ_TYPE,
+        COMMONJ_NATIVE,
+        COMMONJ_CONSTANT,
+        BLIZZARDJ_CONSTANT,
+        BLIZZARDJ_GLOBAL,
+        BLIZZARDJ_FUNCTION,
+        COMMONAI_NATIVE,
+        COMMONAI_CONSTANT,
+        COMMONAI_GLOBAL,
+        COMMONAI_FUNCTION
+    };
+
+    CachedType cachedType;
 };
 
 #endif // VJASSTOKEN_H

@@ -10,6 +10,7 @@ class TestHighlightInfo : public QObject
     private slots:
         void canHoldTokens();
         void canHoldTokensFromCommonJ();
+        void canHoldTokensFromBlizzardJ();
         //void canOrderCodeElementsFromCommonJ();
 };
 

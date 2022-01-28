@@ -49,6 +49,22 @@ void TestHighlightInfo::canHoldTokensFromCommonJ() {
     QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, true);
 }
 
+
+void TestHighlightInfo::canHoldTokensFromBlizzardJ() {
+    const QString text = QString("bj_PI");
+    VJassScanner scanner;
+    QList<VJassToken> tokens = scanner.scan(text, false);
+
+    HighLightInfo highLightInfo(text, tokens, nullptr);
+
+    QCOMPARE(highLightInfo.getFormattedLocations().size(), 1);
+    QVERIFY(highLightInfo.getFormattedLocations().contains(HighLightInfo::Location(0, 0)));
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isBold, false);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].isItalic, true);
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].length, 5); // bj_PI
+    QCOMPARE(highLightInfo.getFormattedLocations()[HighLightInfo::Location(0, 0)].applyForegroundColor, true);
+}
+
 /*
 void TestHighlightInfo::canOrderCodeElementsFromCommonJ() {
     QFile f("wc3reforged/common.j");

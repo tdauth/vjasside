@@ -12,6 +12,8 @@ SyntaxHighlighter::SyntaxHighlighter(QObject *parent) : QSyntaxHighlighter(paren
 }
 
 void SyntaxHighlighter::highlightBlock(const QString &text) {
+    //qDebug() << "Highlight block" << text;
+
     VJassScanner scanner;
     QList<VJassToken> tokens = scanner.scan(text, true);
     HighLightInfo highLightInfo(text, tokens, nullptr, false);

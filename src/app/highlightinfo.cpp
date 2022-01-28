@@ -3,14 +3,9 @@
 #include "vjassnative.h"
 #include "highlightinfo.h"
 
-HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, bool createTextDocument) : textDocument(new QTextDocument(text))
+HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, bool createTextDocument) : textDocument(nullptr)
 {
-    textDocument->setDocumentLayout(new QPlainTextDocumentLayout(textDocument));
-    textDocument->setDefaultFont(getNormalFont());
-    textDocument->setIndentWidth(20.0);
-    //textDocument->setDefaultTextOption(QTextOption::)
-
-    qDebug() << "Getting tokens" << tokens.size();
+    //qDebug() << "Getting tokens" << tokens.size();
 
     // filter for elements which need to be highlighted
     for (const VJassToken &token : tokens) {
@@ -54,6 +49,36 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
                     customTextCharFormat.applyForegroundColor = true;
                     customTextCharFormat.foregroundColor = QColor(0xff7f50);
                     customTextCharFormat.isItalic = true;
+                } else if (token.isBlizzardJConstant()) {
+                    //qDebug() << "BlizzardJ COnstant";
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0x00008b);
+                    customTextCharFormat.isItalic = true;
+                } else if (token.isBlizzardJGlobal()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0x497c8b);
+                    customTextCharFormat.isItalic = true;
+                } else if (token.isBlizzardJFunction()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0xff0000);
+                    customTextCharFormat.isBold = true;
+                    // color="#6b8e23" selColor="#ffffff" bold="0" italic="1
+                } else if (token.isCommonAIConstant()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0x6b8e23);
+                    customTextCharFormat.isItalic = true;
+                } else if (token.isCommonAIGlobal()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0x5c8e6c);
+                    customTextCharFormat.isItalic = true;
+                } else if (token.isCommonAINative()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0x218B21);
+                    customTextCharFormat.isBold = true;
+                } else if (token.isCommonAIFunction()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = QColor(0x00CD63);
+                    customTextCharFormat.isBold = true;
                 } else {
                     qDebug() << "Token type should get some highlighting config:" << token.getValue();
 
@@ -121,6 +146,12 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
     }
 
     if (createTextDocument) {
+        textDocument = new QTextDocument(text);
+        textDocument->setDocumentLayout(new QPlainTextDocumentLayout(textDocument));
+        textDocument->setDefaultFont(getNormalFont());
+        textDocument->setIndentWidth(20.0);
+        //textDocument->setDefaultTextOption(QTextOption::)
+
         // This is the slow method creating all the extra selections!
         // TODO This is the really slow part because of the iteration with the cursors. It might take about 30 seconds or longer.
         // TODO If we use QSyntaxHighlighter properly, we can get rid of this stuff?

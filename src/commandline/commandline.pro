@@ -10,6 +10,8 @@ SOURCES -= ../app/mainwindow.cpp
 SOURCES -= ../app/autocompletionpopup.cpp
 SOURCES -= ../app/linenumbers.cpp
 SOURCES -= ../app/highlightinfo.cpp
+SOURCES -= ../app/textedit.cpp
+SOURCES -= ../app/syntaxhighlighter.cpp
 
 # message("My sources: " + $$SOURCES)
 
@@ -18,6 +20,8 @@ HEADERS -= ../app/mainwindow.h
 HEADERS -= ../app/autocompletionpopup.h
 HEADERS -= ../app/linenumbers.h
 HEADERS -= ../app/highlightinfo.h
+HEADERS -= ../app/textedit.h
+HEADERS -= ../app/syntaxhighlighter.h
 
 SOURCES += \
     main.cpp
