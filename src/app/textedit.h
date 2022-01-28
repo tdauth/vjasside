@@ -14,11 +14,12 @@ class TextEdit : public QWidget
 
 public:
     TextEdit(QWidget *parent);
+    virtual ~TextEdit();
 
     QPlainTextEdit* getPlainTextEdit() const;
 
 protected:
-    void keyPressEvent(QKeyEvent *e) override;
+    virtual void keyPressEvent(QKeyEvent *e) override;
 
 private:
     Ui::TextEdit *ui;

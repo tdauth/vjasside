@@ -1,10 +1,15 @@
 #include <QtGui>
+#include <QtWidgets>
 
 #include "textedit.h"
 #include "ui_textedit.h"
 
 TextEdit::TextEdit(QWidget *parent) : QWidget(parent), ui(new Ui::TextEdit) {
     ui->setupUi(this);
+}
+
+TextEdit::~TextEdit() {
+
 }
 
 QPlainTextEdit* TextEdit::getPlainTextEdit() const {
