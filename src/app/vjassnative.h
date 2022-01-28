@@ -11,8 +11,10 @@ public:
     VJassNative(int line, int column);
 
     void setIdentifier(const QString &identifier);
-    void addParameter(const QString &type, const QString &name);
+    void addParameter(int line, int column, const QString &type, const QString &name);
     void setReturnType(const QString &returnType);
+
+    virtual QString toString() const override;
 
 private:
     QString identifier;

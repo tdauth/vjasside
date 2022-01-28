@@ -64,6 +64,12 @@
      <property name="autoScroll">
       <bool>false</bool>
      </property>
+     <property name="autoScrollMargin">
+      <number>0</number>
+     </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
      <property name="uniformItemSizes">
       <bool>false</bool>
      </property>

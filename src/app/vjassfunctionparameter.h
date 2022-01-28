@@ -3,10 +3,14 @@
 
 #include <QString>
 
-class VJassFunctionParameter
+#include "vjassast.h"
+
+class VJassFunctionParameter : public VJassAst
 {
 public:
-    VJassFunctionParameter(const QString &type, const QString &name);
+    VJassFunctionParameter(int line, int column, const QString &type, const QString &name);
+
+    virtual QString toString() const override;
 
 private:
     QString type;

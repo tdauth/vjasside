@@ -70,6 +70,8 @@ private slots:
 
     void clearAllHighLighting();
 
+    void updateOutliner();
+
     friend class TestMainWindow;
 
 protected:
@@ -102,8 +104,10 @@ private:
         }
 
         virtual ~ScanAndParseResults() {
-            delete ast;
-            ast = nullptr;
+            if (ast != nullptr) {
+                delete ast;
+                ast = nullptr;
+            }
         }
     };
 
@@ -113,5 +117,8 @@ private:
     QAtomicPointer<ScanAndParseResults> scanAndParseResults;
     QAtomicInt scanAndParsePaused;
     QThread *scanAndParseThread;
+
+    // for the outliner
+    QList<VJassAst*> astElements;
 };
 #endif // MAINWINDOW_H

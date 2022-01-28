@@ -33,6 +33,8 @@ public:
 
     virtual QString toString() const;
 
+    static void sortByPosition(QList<VJassAst*> &list);
+
 private:
     QList<VJassParseError> errors;
     QList<VJassAst*> children;
