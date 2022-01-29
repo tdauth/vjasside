@@ -21,14 +21,14 @@ void TestParser::canParseCommonJ() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 57546);
+    QCOMPARE(tokens.size(), 57314);
     QCOMPARE(input.size(), 355533);
 
     QBENCHMARK {
         tokens = scanner.scan(input, true);
     }
 
-    QCOMPARE(tokens.size(), 35810);
+    QCOMPARE(tokens.size(), 35578);
     QCOMPARE(input.size(), 355533);
 
     VJassParser parser;
@@ -38,7 +38,95 @@ void TestParser::canParseCommonJ() {
         ast = parser.parse(tokens);
     }
 
-    QCOMPARE(ast->getChildren().size(), 1668);
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 1669);
+    // no syntax errors
+    QCOMPARE(ast->getParseErrors().size(), 0);
+
+    delete ast;
+    ast = nullptr;
+}
+
+void TestParser::canParseCommonAI() {
+    QFile f("wc3reforged/common.ai");
+
+    QVERIFY(f.open(QFile::ReadOnly | QFile::Text));
+
+    QTextStream in(&f);
+    QString input = in.readAll();
+    QCOMPARE(input.size(), 95876);
+
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens;
+
+    QBENCHMARK {
+        tokens = scanner.scan(input, false);
+    }
+
+    QCOMPARE(tokens.size(), 21018);
+    QCOMPARE(input.size(), 95876);
+
+    QBENCHMARK {
+        tokens = scanner.scan(input, true);
+    }
+
+    QCOMPARE(tokens.size(), 13510);
+    QCOMPARE(input.size(), 95876);
+
+    VJassParser parser;
+    VJassAst *ast = nullptr;
+
+    QBENCHMARK {
+        ast = parser.parse(tokens);
+    }
+
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 246);
+    // no syntax errors
+    QCOMPARE(ast->getParseErrors().size(), 0);
+
+    delete ast;
+    ast = nullptr;
+}
+
+void TestParser::canParseBlizzardJ() {
+    QFile f("wc3reforged/Blizzard.j");
+
+    QVERIFY(f.open(QFile::ReadOnly | QFile::Text));
+
+    QTextStream in(&f);
+    QString input = in.readAll();
+    QCOMPARE(input.size(), 471054);
+
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens;
+
+    QBENCHMARK {
+        tokens = scanner.scan(input, false);
+    }
+
+    QCOMPARE(tokens.size(), 84823);
+    QCOMPARE(input.size(), 471054);
+
+    QBENCHMARK {
+        tokens = scanner.scan(input, true);
+    }
+
+    QCOMPARE(tokens.size(), 56574);
+    QCOMPARE(input.size(), 471054);
+
+    VJassParser parser;
+    VJassAst *ast = nullptr;
+
+    QBENCHMARK {
+        ast = parser.parse(tokens);
+    }
+
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 1067);
+    // no syntax errors
     QCOMPARE(ast->getParseErrors().size(), 0);
 
     delete ast;

@@ -57,6 +57,7 @@ public slots:
     void restartTimer();
     void documentChanges();
 
+    void resetDocumentChanges();
     void updateWindowTitle();
 
     void updateSelectedLines();
@@ -119,6 +120,7 @@ private:
     QAtomicPointer<ScanAndParseResults> scanAndParseResults;
     QAtomicInt scanAndParsePaused;
     QThread *scanAndParseThread;
+    QAtomicInt stopScanAndParseThread;
 
     // for the outliner
     QList<VJassAst*> astElements;

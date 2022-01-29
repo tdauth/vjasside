@@ -9,6 +9,8 @@ class TestParser : public QObject
 
     private slots:
         void canParseCommonJ();
+        void canParseCommonAI();
+        void canParseBlizzardJ();
 };
 
 #endif // TESTPARSER_H

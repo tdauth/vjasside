@@ -132,16 +132,21 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 column += columns;
                 lines += lines;
                 i += length;
-
+            // Comparison Operator
+            } else if (currentContent.startsWith("==") || currentContent.startsWith("<=") || currentContent.startsWith(">=") || currentContent.startsWith("!=")) {
+                const int length = 2;
+                result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::ComparisonOperator));
+                column += length;
+                i += length;
             // Assignment Operator
             } else if (currentContent.startsWith("=")) {
-                result.push_back(VJassToken(currentContent.mid(i, 1), line, column, VJassToken::AssignmentOperator));
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::AssignmentOperator));
 
                 column += 1;
                 i += 1;
             // operator
             } else if (currentContent.startsWith("/") || currentContent.startsWith("+") || currentContent.startsWith("-") || currentContent.startsWith("*")) {
-                result.push_back(VJassToken(currentContent.mid(i, 1), line, column, VJassToken::Operator));
+                result.push_back(VJassToken(content.mid(i, 1), line, column, VJassToken::Operator));
 
                 column += 1;
                 i += 1;

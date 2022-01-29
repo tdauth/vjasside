@@ -4,6 +4,8 @@ CONFIG += c++11
 CONFIG += no_testcase_installs
 CONFIG += console
 
+# Remove all classes requiring QtGui or QtWidgets
+
 SOURCES += $$files(../app/*.cpp)
 SOURCES -= ../app/main.cpp
 SOURCES -= ../app/mainwindow.cpp

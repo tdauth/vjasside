@@ -14,6 +14,7 @@ public:
         RealLiteral,
         True,
         False,
+        Null,
         FunctionCall,
         ArrayAccess,
         Brackets,

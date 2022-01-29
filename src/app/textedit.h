@@ -13,6 +13,10 @@ public:
 
 protected:
     virtual void keyPressEvent(QKeyEvent *e) override;
+    virtual void keyReleaseEvent(QKeyEvent *e) override;
+
+private:
+    bool pressedControl;
 };
 
 #endif // TEXTEDIT_H

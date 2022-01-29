@@ -3,11 +3,10 @@
 
 #include "textedit.h"
 
-TextEdit::TextEdit(QWidget *parent) : QPlainTextEdit(parent) {
+TextEdit::TextEdit(QWidget *parent) : QPlainTextEdit(parent), pressedControl(false) {
 }
 
 TextEdit::~TextEdit() {
-
 }
 
 void TextEdit::keyPressEvent(QKeyEvent *e) {
@@ -70,7 +69,17 @@ void TextEdit::keyPressEvent(QKeyEvent *e) {
             cur.movePosition(QTextCursor::Down);
             cur.insertText(leadingSpaces);
         }
+    } else if (e->key() == Qt::Key_Control) {
+        pressedControl = true;
     } else {
         QPlainTextEdit::keyPressEvent(e);
+    }
+}
+
+void TextEdit::keyReleaseEvent(QKeyEvent *e) {
+    if (e->key() == Qt::Key_Control) {
+        pressedControl = false;
+    } else {
+        QPlainTextEdit::keyReleaseEvent(e);
     }
 }

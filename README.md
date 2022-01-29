@@ -6,6 +6,16 @@ Simple standalone IDE for the scripting languages JASS and vJass of the computer
 
 [![Build Status](https://travis-ci.org/tdauth/vjasside.svg?branch=master)](https://travis-ci.org/tdauth/vjasside)
 
+## Features
+
+* Cross-platform: All platforms supported by the [Qt framework](https://www.qt.io/).
+* Custom JASS parser not requiring pjass or other external tools.
+* Syntax highlighting.
+* Quick access of standard scripts from Warcraft III.
+* Outliner listing declarations.
+* Automatic syntax checking while writing code.
+* Automatic completion while writing code.
+
 ## Motivation
 
 There are some JASS and vJass tools out there such as [TESH](https://www.hiveworkshop.com/threads/a-new-tesh-syntax-highlighter-for-warcraft-3.246081/) which is integrated into the World Editor's trigger editor.

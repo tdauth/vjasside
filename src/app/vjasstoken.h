@@ -20,6 +20,7 @@ public:
     const static QString KEYWORD_IF;
     const static QString KEYWORD_THEN;
     const static QString KEYWORD_ELSEIF;
+    const static QString KEYWORD_ELSE;
     const static QString KEYWORD_ENDIF;
     const static QString KEYWORD_LOOP;
     const static QString KEYWORD_ENDLOOP;
@@ -66,6 +67,7 @@ public:
         IfKeyword,
         ThenKeyword,
         ElseifKeyword,
+        ElseKeyword,
         EndifKeyword,
         LoopKeyword,
         EndloopKeyword,
@@ -87,6 +89,7 @@ public:
         Comment,
         Operator,
         AssignmentOperator,
+        ComparisonOperator,
         LeftBracket,
         RightBracket,
         LeftSquareBracket,

@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
     , scanAndParseInput(nullptr)
     , scanAndParseResults(nullptr)
     , scanAndParsePaused(0)
+    , stopScanAndParseThread(0)
 {
     ui->setupUi(this);
 
@@ -89,6 +90,9 @@ MainWindow::MainWindow(QWidget *parent)
     updateLineNumbersView();
     updateLineNumbers();
 
+    // initial document is empty
+    resetDocumentChanges();
+
     syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
 
     /*
@@ -98,8 +102,8 @@ MainWindow::MainWindow(QWidget *parent)
                 VJassScanner scanner;
                 VJassParser parser;
 
-                // consume the text forever and scan and parse it
-                while (true) {
+                // consume the text until the thread is stopped and scan and parse it
+                while (this->stopScanAndParseThread.loadAcquire() == 0) {
                     //qDebug() << "Retrieving possible scan and parse input text from thread";
 
                     if (this->scanAndParsePaused.loadAcquire() == 0) {
@@ -163,7 +167,7 @@ MainWindow::~MainWindow()
         killTimer(timerId);
     }
 
-    scanAndParseThread->exit(0);
+    stopScanAndParseThread.storeRelease(1);
     scanAndParseThread->wait();
     delete scanAndParseThread;
     scanAndParseThread = nullptr;
@@ -179,13 +183,12 @@ void MainWindow::newFile() {
         if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
             if (saveAs()) {
                 ui->textEdit->clear();
-
-                documentHasChanged = false;
-                updateWindowTitle();
+                resetDocumentChanges();
             }
         }
     } else {
         ui->textEdit->clear();
+        resetDocumentChanges();
     }
 }
 
@@ -212,9 +215,7 @@ void MainWindow::openFile() {
 
             if (f.open(QIODevice::ReadOnly)) {
                 this->ui->textEdit->document()->setPlainText(f.readAll());
-
-                documentHasChanged = false;
-                updateWindowTitle();
+                resetDocumentChanges();
             } else {
                 QMessageBox::warning(this, tr("Error"), tr("Error on reading file into %1").arg(openFileName));
             }
@@ -232,9 +233,7 @@ bool MainWindow::saveAs() {
 
         if (f.open(QIODevice::WriteOnly)) {
             f.write(ui->textEdit->toPlainText().toUtf8());
-
-            documentHasChanged = false;
-            updateWindowTitle();
+            resetDocumentChanges();
 
             return true;
         } else {
@@ -250,14 +249,17 @@ bool MainWindow::closeFile() {
         if (QMessageBox::question(this, tr("Discard unsaved changes"), tr("The document has been modified. Do you want to save your changes?")) == QMessageBox::Yes) {
             if (saveAs()) {
                 ui->textEdit->clear();
+                resetDocumentChanges();
             } else {
                 return false;
             }
         } else {
             ui->textEdit->clear();
+            resetDocumentChanges();
         }
     } else {
         ui->textEdit->clear();
+        resetDocumentChanges();
     }
 
     return true;
@@ -297,6 +299,7 @@ void MainWindow::openCommonj() {
 
         if (f.open(QIODevice::ReadOnly)) {
             ui->textEdit->document()->setPlainText(f.readAll());
+            resetDocumentChanges();
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
         }
@@ -310,6 +313,7 @@ void MainWindow::openCommonai() {
 
         if (f.open(QIODevice::ReadOnly)) {
             ui->textEdit->document()->setPlainText(f.readAll());
+            resetDocumentChanges();
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
         }
@@ -323,6 +327,7 @@ void MainWindow::openBlizzardj() {
 
         if (f.open(QIODevice::ReadOnly)) {
             ui->textEdit->document()->setPlainText(f.readAll());
+            resetDocumentChanges();
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
         }
@@ -339,80 +344,13 @@ void MainWindow::updateCursorPosition(int position) {
     ui->textEdit->setTabStopDistance(20.0);
 }
 
-/**
- * @brief This is one of the most important methods since it does not run concurrently and hence blocks the GUI. It has to be as fast as possible to highlight all code elements.
- *
- * @param highLightInfo Contains a highlighted text document which will replace the current one.
- */
 void MainWindow::highlightTokensAndAst(const HighLightInfo & /* highLightInfo */, bool /* checkSyntax */) {
-    /*
-    qDebug() << "Beginning highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size();
-    QElapsedTimer timer;
-    timer.start();
-
-    const int position = ui->textEdit->getPlainTextEdit()->textCursor().position();
-    qDebug() << "Old cursor position" << position;
-
-    // disable signals
-    QSignalBlocker signalBlocker(ui->textEdit);
-
-    // this is the actual slow part
+    // TODO Only highlight syntax errors.
     //QList<QTextEdit::ExtraSelection> extraSelections = highLightInfo.toExtraSelections(ui->textEdit->document(), checkSyntax);
 
     //qDebug() << "Extra selections" << extraSelections.size();
 
     //ui->textEdit->setExtraSelections(extraSelections);
-    ui->textEdit->getPlainTextEdit()->setDocument(highLightInfo.getTextDocument());
-    // TODO Try setting the format via the syntax highlighter and only the changed blocks
-    // TODO Maybe we can detect which block is rehighlighted?
-    //syntaxHighlighter->
-
-    // set position back to previous one and remove all formatting
-    qDebug() << "Move cursor back to position" << position;
-    // TODO Restore the selection as well.
-    updateCursorPosition(position);
-
-    // reset to the default font on typing
-    ui->textEdit->getPlainTextEdit()->document()->setDefaultFont(HighLightInfo::getNormalFont());
-
-    qDebug() << "Ending highlighting code elements with elements size:" << highLightInfo.getFormattedLocations().size() << "and elapsed time" << timer.elapsed() << "ms and in seconds" << (timer.elapsed() / 1000) << "and in minutes" << (timer.elapsed() / (1000 * 60));
-    */
-
-    /*
-    // make sure no slots are triggered by this to prevent endless recursions
-    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
-
-    // directly iterating through all entries is the fastest way
-    for (auto iterator = codeElementHolder.getFormattedLocations().constKeyValueBegin(); iterator != codeElementHolder.getFormattedLocations().constKeyValueEnd(); ++iterator) {
-        const HighLightInfo::Location &location = iterator->first;
-        const HighLightInfo::CustomTextCharFormat &customTextCharFormat = iterator->second;
-
-        // move a cursor to the character
-        QTextCursor cursor(ui->textEdit->document());
-        cursor.setPosition(0, QTextCursor::MoveAnchor);
-        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, location.line);
-        cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, location.column);
-
-        // format all characters
-        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, customTextCharFormat.length);
-        QTextCharFormat fmt = getNormalFormat();
-        customTextCharFormat.applyToTextCharFormat(fmt, checkSyntax);
-        cursor.setCharFormat(fmt);
-
-        // reset selecting and reset format, otherwise moving the cursor might reformat anything
-        cursor.clearSelection();
-        cursor.setCharFormat(getNormalFormat());
-        ui->textEdit->setCurrentCharFormat(getNormalFormat());
-    }
-
-    // reset formatting for upcoming text
-    ui->textEdit->setCurrentCharFormat(getNormalFormat());
-
-    // enable triggering text changes by the user again
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
-    */
 }
 
 void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
@@ -563,6 +501,12 @@ void MainWindow::restartTimer() {
 
 void MainWindow::documentChanges() {
     documentHasChanged = true;
+    updateWindowTitle();
+    updateLineNumbers();
+}
+
+void MainWindow::resetDocumentChanges() {
+    documentHasChanged = false;
     updateWindowTitle();
     updateLineNumbers();
 }

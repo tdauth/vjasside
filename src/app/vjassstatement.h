@@ -6,25 +6,30 @@
 class VJassStatement : public VJassAst
 {
 public:
-    VJassStatement(int line, int column);
-
     enum Type {
         Local,
         Set,
         Call,
         If,
         Elseif,
+        Else,
         Endif,
         Loop,
         Exitwhen,
-        Endloop
+        Endloop,
+        Return
     };
 
-    void setType(Type type);
+    VJassStatement(int line, int column, Type type);
+
     Type getType() const;
 
+    void setHasElse(bool hasElse);
+    bool getHasElse() const;
+
 private:
-    Type type;
+    const Type type;
+    bool hasElse; // for if statements
 };
 
 #endif // VJASSSTATEMENT_H

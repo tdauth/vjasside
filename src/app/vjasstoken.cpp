@@ -18,6 +18,7 @@ const QString VJassToken::KEYWORD_CALL = "call";
 const QString VJassToken::KEYWORD_IF = "if";
 const QString VJassToken::KEYWORD_THEN = "then";
 const QString VJassToken::KEYWORD_ELSEIF = "elseif";
+const QString VJassToken::KEYWORD_ELSE = "else";
 const QString VJassToken::KEYWORD_ENDIF = "endif";
 const QString VJassToken::KEYWORD_LOOP = "loop";
 const QString VJassToken::KEYWORD_ENDLOOP = "endloop";
@@ -49,6 +50,7 @@ const QStringList VJassToken::KEYWRODS_ALL = {
     VJassToken::KEYWORD_IF,
     VJassToken::KEYWORD_THEN,
     VJassToken::KEYWORD_ELSEIF,
+    VJassToken::KEYWORD_ELSE,
     VJassToken::KEYWORD_ENDIF,
     VJassToken::KEYWORD_LOOP,
     VJassToken::KEYWORD_ENDLOOP,
@@ -5800,6 +5802,7 @@ bool VJassToken::highlight() const {
         && getType() != VJassToken::WhiteSpace
         && getType() != VJassToken::Operator
         && getType() != VJassToken::AssignmentOperator
+        && getType() != VJassToken::ComparisonOperator
         && getType() != VJassToken::LeftBracket
         && getType() != VJassToken::RightBracket
         && getType() != VJassToken::LeftSquareBracket
@@ -5830,6 +5833,7 @@ bool VJassToken::isValidKeyword() const {
         || getType() == VJassToken::IfKeyword
         || getType() == VJassToken::ThenKeyword
         || getType() == VJassToken::ElseifKeyword
+        || getType() == VJassToken::ElseKeyword
         || getType() == VJassToken::EndifKeyword
         || getType() == VJassToken::LoopKeyword
         || getType() == VJassToken::EndloopKeyword
@@ -5875,6 +5879,8 @@ VJassToken::Type VJassToken::typeFromKeyword(const QString &keyword) {
         return VJassToken::ThenKeyword;
     } else if (keyword == KEYWORD_ELSEIF) {
         return VJassToken::ElseifKeyword;
+    } else if (keyword == KEYWORD_ELSE) {
+        return VJassToken::ElseKeyword;
     } else if (keyword == KEYWORD_ENDIF) {
         return VJassToken::EndifKeyword;
     } else if (keyword == KEYWORD_LOOP) {
