@@ -40,6 +40,21 @@ void TestScanner::canScanNativesFromCommonJ() {
     QCOMPARE(tokens.at(index).getValueLength(), 6);
 }
 
+void TestScanner::canScanRandomCharacters() {
+    const QString RANDOM_CHARACTER_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXZY0123456789!\"§$%&()=?\\ßäöü+*-/#_':;,<>|°^{}[]\t ";
+
+    QString randomString = "";
+
+    for (int i = 0; i < 1000; ++i) {
+        int index = QRandomGenerator::global()->bounded(RANDOM_CHARACTER_TABLE.length() - 1);
+        randomString += RANDOM_CHARACTER_TABLE.mid(index, 1);
+    }
+
+    VJassScanner scanner;
+
+    scanner.scan(randomString);
+}
+
 void TestScanner::canScanCommonJ() {
     QFile f("wc3reforged/common.j");
 
@@ -57,14 +72,14 @@ void TestScanner::canScanCommonJ() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 57321);
+    QCOMPARE(tokens.size(), 57314);
     QCOMPARE(input.size(), 355533);
 
     QBENCHMARK {
         tokens = scanner.scan(input, true);
     }
 
-    QCOMPARE(tokens.size(), 35585);
+    QCOMPARE(tokens.size(), 35578);
     QCOMPARE(input.size(), 355533);
 }
 
@@ -85,18 +100,18 @@ void TestScanner::canScanCommonAI() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 8461);
+    QCOMPARE(tokens.size(), 20870);
     QCOMPARE(input.size(), 95876);
 
     QBENCHMARK {
         tokens = scanner.scan(input, true);
     }
 
-    QCOMPARE(tokens.size(), 5077);
+    QCOMPARE(tokens.size(), 13362);
     QCOMPARE(input.size(), 95876);
 }
 
-void TestScanner::canScanCommonBlizzardJ() {
+void TestScanner::canScanBlizzardJ() {
     QFile f("wc3reforged/Blizzard.j");
 
     QVERIFY(f.open(QFile::ReadOnly | QFile::Text));
@@ -113,14 +128,14 @@ void TestScanner::canScanCommonBlizzardJ() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 5733);
+    QCOMPARE(tokens.size(), 84288);
     QCOMPARE(input.size(), 471054);
 
     QBENCHMARK {
         tokens = scanner.scan(input, true);
     }
 
-    QCOMPARE(tokens.size(), 3354);
+    QCOMPARE(tokens.size(), 56039);
     QCOMPARE(input.size(), 471054);
 }
 
