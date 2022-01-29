@@ -1,4 +1,5 @@
 #include "vjasstype.h"
+#include "vjasstoken.h"
 
 VJassType::VJassType(int line, int column) : VJassAst(line, column)
 {
@@ -37,4 +38,14 @@ const QString& VJassType::getParent() const {
 
 void VJassType::setParent(const QString &parent) {
     this->parent = parent;
+}
+
+QString VJassType::toString() const {
+    QString result = VJassToken::KEYWORD_TYPE + " " + getIdentifier();
+
+    if (!getParent().isEmpty()) {
+        result += " extends " + getParent();
+    }
+
+    return result;
 }

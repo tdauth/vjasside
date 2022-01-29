@@ -9,12 +9,24 @@ void VJassNative::setIdentifier(const QString &identifier) {
     this->identifier = identifier;
 }
 
+const QString& VJassNative::getIdentifier() const {
+    return identifier;
+}
+
 void VJassNative::addParameter(int line, int column, const QString &type, const QString &name) {
     parameters.append(VJassFunctionParameter(line, column, type, name));
 }
 
+const VJassNative::Parameters& VJassNative::getParameters() const {
+    return parameters;
+}
+
 void VJassNative::setReturnType(const QString &returnType) {
     this->returnType = returnType;
+}
+
+const QString& VJassNative::getReturnType() const {
+    return returnType;
 }
 
 QString VJassNative::toString() const {
@@ -25,7 +37,7 @@ QString VJassNative::toString() const {
     } else {
         int i = 0;
 
-        for (VJassFunctionParameter p : parameters) {
+        for (const VJassFunctionParameter &p : parameters) {
             result += p.toString();
 
             if (i < parameters.size() - 1) {

@@ -1,6 +1,9 @@
 #include <QtCore>
 
 #include "vjassnative.h"
+#include "vjassfunction.h"
+#include "vjassglobal.h"
+#include "vjasstype.h"
 #include "highlightinfo.h"
 
 HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, bool createTextDocument) : textDocument(nullptr)
@@ -132,7 +135,11 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         while (!stack.isEmpty()) {
             VJassAst *a = stack.pop();
 
-            if (typeid(*a) == typeid(VJassNative)) {
+            if (typeid(*a) == typeid(VJassNative)
+                || typeid(*a) == typeid(VJassFunction)
+                || typeid(*a) == typeid(VJassGlobal)
+                || typeid(*a) == typeid(VJassType)
+                ) {
                 astElements.push_back(a);
             }
 

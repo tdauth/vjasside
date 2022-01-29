@@ -15,6 +15,8 @@ public:
     bool getIsArray() const;
     bool getIsConstant() const;
 
+    virtual QString toString() const override;
+
 private:
     QString name;
     QString type;

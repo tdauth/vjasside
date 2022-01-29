@@ -469,6 +469,8 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                 const VJassToken &typeName = tokens.at(i);
 
                 if (typeName.isValidIdentifier()) {
+                    vjassType->setIdentifier(typeName.getValue());
+
                     i++;
 
                     if (i == tokens.size()) {
@@ -493,6 +495,8 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                                 if (!parentType.isValidIdentifier()) {
                                     vjassType->addError(parentType, "Invalid parent type identifier " + parentType.getValue());
+                                } else {
+                                    vjassType->setParent(parentType.getValue());
                                 }
 
                                 i++;

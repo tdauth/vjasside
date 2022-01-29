@@ -67,6 +67,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxConstants, &QCheckBox::setChecked);
     connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxGlobals, &QCheckBox::setChecked);
     connect(ui->checkBoxAll, &QCheckBox::clicked, ui->checkBoxFunctions, &QCheckBox::setChecked);
+    connect(ui->checkBoxAll, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
 
     connect(ui->checkBoxTypes, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
     connect(ui->checkBoxNatives, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
@@ -278,7 +279,7 @@ void MainWindow::quit() {
 
 void MainWindow::goToLine() {
     bool ok = false;
-    const int line = QInputDialog::getInt(this, tr("Go to Line"), tr("Line"), ui->textEdit->textCursor().blockNumber(), 1, ui->textEdit->blockCount(), 1, &ok);
+    const int line = QInputDialog::getInt(this, tr("Go to Line"), tr("Line %1 - %2").arg(1).arg(ui->textEdit->blockCount()), ui->textEdit->textCursor().blockNumber(), 1, ui->textEdit->blockCount(), 1, &ok);
 
     if (ok) {
         QTextCursor textCursor = ui->textEdit->textCursor();
@@ -619,7 +620,12 @@ void MainWindow::updateOutliner() {
     for (const VJassAst *astElement : astElements) {
         const QString text = astElement->toString();
 
-        if ((text.startsWith(VJassToken::KEYWORD_NATIVE) && ui->checkBoxNatives->isChecked())) {
+        if ((text.startsWith(VJassToken::KEYWORD_NATIVE) && ui->checkBoxNatives->isChecked())
+            || (text.startsWith(VJassToken::KEYWORD_FUNCTION) && ui->checkBoxFunctions->isChecked())
+            || (text.startsWith(VJassToken::KEYWORD_CONSTANT) && ui->checkBoxConstants->isChecked())
+            || (text.startsWith(VJassToken::KEYWORD_TYPE) && ui->checkBoxTypes->isChecked())
+            || (!text.startsWith(VJassToken::KEYWORD_NATIVE) && !text.startsWith(VJassToken::KEYWORD_FUNCTION) && !text.startsWith(VJassToken::KEYWORD_CONSTANT) && !text.startsWith(VJassToken::KEYWORD_TYPE) && ui->checkBoxGlobals->isChecked())
+        ) {
             QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
             item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
             ui->outlinerListWidget->addItem(item);

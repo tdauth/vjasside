@@ -16,6 +16,8 @@ public:
     const QString& getParent() const;
     void setParent(const QString &parent);
 
+    QString toString() const override;
+
 private:
     QString identifier;
     QString parent;
