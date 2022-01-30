@@ -49,9 +49,15 @@
    </property>
    <item>
     <widget class="QListWidget" name="listWidget">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="maximumSize">
       <size>
-       <width>48</width>
+       <width>60</width>
        <height>16777215</height>
       </size>
      </property>

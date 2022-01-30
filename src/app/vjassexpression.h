@@ -12,6 +12,7 @@ public:
         StringLiteral,
         IntegerLiteral,
         RealLiteral,
+        RawCodeLiteral,
         True,
         False,
         Null,

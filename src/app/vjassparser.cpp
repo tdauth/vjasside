@@ -196,12 +196,14 @@ inline void parseFunctionDeclaration(const QList<VJassToken> &tokens, const VJas
  * @param i The index of the current token handled by the parser.
  * @param bracketsNestingLevel The nesting level starting with 0 of expressions inside expressions with brackets.
  */
-inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const VJassToken &token, VJassAst *ast, int &i, int bracketsNestingLevel = 0) {
+inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const VJassToken &token, VJassAst *ast, int &i, int bracketsNestingLevel = 0, bool required = true) {
     VJassExpression *result = nullptr;
     i++;
 
     if (hasReachedEndOfLine(tokens, i)) {
-        ast->addErrorAtEndOf(token, QObject::tr("Missing expression."));
+        if (required) {
+            ast->addErrorAtEndOf(token, QObject::tr("Missing expression."));
+        }
     } else {
         const VJassToken &nextToken = tokens.at(i);
 
@@ -325,7 +327,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 if (hasReachedEndOfLine(tokens, i + 1)) {
                     ast->addErrorAtEndOf(token, QObject::tr("Expected more expressions after separator."));
                 } else {
-                    parseExpression(tokens, token, ast, i);
+                    result = parseExpression(tokens, nextToken, ast, i);
                 }
 
                 break;
@@ -348,6 +350,16 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                         }
 
                         result = functionCall;
+                    // parameters
+                    } else if (bracket.getType() == VJassToken::Separator) {
+                        i++;
+                        VJassExpression *parameter = parseExpression(tokens, token, ast, i);
+
+                        if (parameter != nullptr) {
+                            ast->addChild(parameter);
+                        }
+
+                        result = parameter;
                     // array access
                     } else if (bracket.getType() == VJassToken::LeftSquareBracket) {
                         VJassExpression *arrayAccess = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
@@ -409,8 +421,29 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                         }
 
                         result = operation;
+                    // concatenation
+                    } else if (bracket.getType() == VJassToken::AndKeyword || bracket.getType() == VJassToken::OrKeyword) {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        if (bracket.getType() == VJassToken::AndKeyword) {
+                            operation->setType(VJassExpression::And);
+                        } else {
+                            operation->setType(VJassExpression::Or);
+                        }
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
                     } else if (bracket.getType() != VJassToken::ThenKeyword) {
                         ast->addError(bracket, QObject::tr("Unexpected token after identifier: %1").arg(bracket.getValue()));
+                    } else {
+                        // consume the identifier
+                        i++;
                     }
                 // identifier only (for example on return or an if statement with only a boolean variable)
                 } else {
@@ -426,10 +459,10 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 result->setType(VJassExpression::IntegerLiteral);
                 result->setValue(nextToken.getValue());
 
-                const int j = i + 1;
+                i++;
 
-                if (!hasReachedEndOfLine(tokens, j)) {
-                    const VJassToken &bracket = tokens.at(j);
+                if (!hasReachedEndOfLine(tokens, i)) {
+                    const VJassToken &bracket = tokens.at(i);
 
                     if (bracket.getType() == VJassToken::Operator) {
                         VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
@@ -444,7 +477,6 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                             operation->setType(VJassExpression::Division);
                         }
 
-                        i++;
                         VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
 
                         if (rightOperation != nullptr) {
@@ -453,7 +485,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
                         result = operation;
                     // closing right bracket
-                    } else if (bracket.getType() == VJassToken::RightBracket || bracket.getType() == VJassToken::RightSquareBracket) {
+                    } else if (bracket.getType() == VJassToken::RightBracket || bracket.getType() == VJassToken::RightSquareBracket || bracket.getType() == VJassToken::ThenKeyword) {
                     } else {
                         ast->addError(bracket, QObject::tr("Unexpected token after integer literal: %1").arg(bracket.getValue()));
                     }
@@ -466,10 +498,10 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 result->setType(VJassExpression::RealLiteral);
                 result->setValue(nextToken.getValue());
 
-                const int j = i + 1;
+                i++;
 
-                if (!hasReachedEndOfLine(tokens, j)) {
-                    const VJassToken &bracket = tokens.at(j);
+                if (!hasReachedEndOfLine(tokens, i)) {
+                    const VJassToken &bracket = tokens.at(i);
 
                     if (bracket.getType() == VJassToken::Operator) {
                         VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
@@ -484,7 +516,6 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                             operation->setType(VJassExpression::Division);
                         }
 
-                        i++;
                         VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
 
                         if (rightOperation != nullptr) {
@@ -493,11 +524,20 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
                         result = operation;
                     // closing right bracket
-                    } else if (bracket.getType() == VJassToken::RightBracket) {
+                    } else if (bracket.getType() == VJassToken::RightBracket || bracket.getType() == VJassToken::ThenKeyword) {
                     } else {
                         ast->addError(bracket, QObject::tr("Unexpected token after real literal: %1").arg(bracket.getValue()));
                     }
                 }
+
+                break;
+            }
+            case VJassToken::RawCodeLiteral: {
+                result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+                result->setType(VJassExpression::RawCodeLiteral);
+                result->setValue(nextToken.getValue());
+
+                i++;
 
                 break;
             }
@@ -506,10 +546,10 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 result->setType(VJassExpression::StringLiteral);
                 result->setValue(nextToken.getValue());
 
-                const int j = i + 1;
+                i++;
 
-                if (!hasReachedEndOfLine(tokens, j)) {
-                    const VJassToken &bracket = tokens.at(j);
+                if (!hasReachedEndOfLine(tokens, i)) {
+                    const VJassToken &bracket = tokens.at(i);
 
                     if (bracket.getType() == VJassToken::Operator) {
                         if (bracket.getValue() == "+") {
@@ -517,7 +557,6 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
 
                             operation->setType(VJassExpression::Sum);
 
-                            i++;
                             VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
 
                             if (rightOperation != nullptr) {
@@ -1043,10 +1082,8 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                         ifStatement->addChild(expression);
                     }
 
-                    i++;
-
                     if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
-                        ast->addErrorAtEndOf(token, QObject::tr("Expected then keyword."));
+                        ast->addErrorAtEndOf(token, QObject::tr("Expected then keyword but line ends."));
                     } else {
                         const VJassToken &thenToken = tokens.at(i);
 
@@ -1082,8 +1119,6 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
                         if (expression != nullptr) {
                             elseifStatement->addChild(expression);
                         }
-
-                        i++;
 
                         if (hasReachedEndOfLine(tokens, i, wasLineBreak)) {
                             ast->addErrorAtEndOf(token, QObject::tr("Expected then keyword."));
@@ -1165,12 +1200,11 @@ VJassAst* VJassParser::parse(const QList<VJassToken> &tokens) {
 
                     VJassStatement *returnStatement = new VJassStatement(token.getLine(), token.getColumn(), VJassStatement::Return);
 
-                    VJassExpression *expression = parseExpression(tokens, token, ast, i);
+                    VJassExpression *expression = parseExpression(tokens, token, ast, i, 0, false);
 
+                    // return expression is optional
                     if (expression != nullptr) {
                         returnStatement->addChild(expression);
-                    } else {
-                        ast->addErrorAtEndOf(token, QObject::tr("Missing return expression."));
                     }
 
                     currentFunction->addChild(returnStatement);

@@ -5,6 +5,7 @@
 
 TextEdit::TextEdit(QWidget *parent) : QPlainTextEdit(parent), pressedControl(false) {
     setLineWrapMode(QPlainTextEdit::NoWrap);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 TextEdit::~TextEdit() {
