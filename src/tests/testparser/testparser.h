@@ -13,6 +13,7 @@ class TestParser : public QObject
         void canParseBlizzardJ();
         void canParseNestedExpression();
         void canParseSetStatement();
+        void canParseIfStatement();
 };
 
 #endif // TESTPARSER_H

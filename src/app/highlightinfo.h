@@ -21,7 +21,7 @@
 class HighLightInfo
 {
 public:
-    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, bool createTextDocument = false);
+    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput = QString(), const QString &pjassErrorOutput = QString(), bool fillCustomTextCharFormat = true, bool createTextDocument = false);
 
     struct Location {
         int line;

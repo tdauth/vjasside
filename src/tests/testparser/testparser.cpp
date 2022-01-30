@@ -176,4 +176,29 @@ void TestParser::canParseSetStatement() {
     ast = nullptr;
 }
 
+void TestParser::canParseIfStatement() {
+    const QString input =
+            QString("function bla takes nothing returns nothing\n")
+            + "if true == false then\n"
+            + "elseif 10 > 100 then\n"
+            + "elseif (10 > 100 or (bla(100) and variable)) then\n"
+            + "else\n"
+            + "endif\n"
+            + "endfunction";
+
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens;
+    tokens = scanner.scan(input, false);
+    VJassParser parser;
+    VJassAst *ast = parser.parse(tokens);
+
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 1);
+    QCOMPARE(ast->getParseErrors().size(), 0);
+
+    delete ast;
+    ast = nullptr;
+}
+
 QTEST_MAIN(TestParser)

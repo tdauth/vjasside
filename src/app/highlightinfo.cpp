@@ -4,96 +4,99 @@
 #include "vjassfunction.h"
 #include "vjassglobal.h"
 #include "vjasstype.h"
+#include "pjass.h"
 #include "highlightinfo.h"
 
-HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, bool createTextDocument) : textDocument(nullptr)
+HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput, bool fillCustomTextCharFormat, bool createTextDocument) : textDocument(nullptr)
 {
     //qDebug() << "Getting tokens" << tokens.size();
 
     // filter for elements which need to be highlighted
-    for (const VJassToken &token : tokens) {
-        if (token.highlight()) {
-            CustomTextCharFormat &customTextCharFormat = getCustomTextCharFormat(token.getLine(), token.getColumn());
-            customTextCharFormat.length = token.getLength();
+    if (fillCustomTextCharFormat) {
+        for (const VJassToken &token : tokens) {
+            if (token.highlight()) {
+                CustomTextCharFormat &customTextCharFormat = getCustomTextCharFormat(token.getLine(), token.getColumn());
+                customTextCharFormat.length = token.getLength();
 
-            // formats are taken from https://github.com/tdauth/syntaxhighlightings/blob/master/Kate/vjass.xml
-            // TODO You should be able to configure them in the settings but this has no high priority right now.
-            if (token.isValidKeyword()) {
-                customTextCharFormat.applyForegroundColor = true;
-                customTextCharFormat.foregroundColor = Qt::black;
-                customTextCharFormat.isBold = true;
+                // formats are taken from https://github.com/tdauth/syntaxhighlightings/blob/master/Kate/vjass.xml
+                // TODO You should be able to configure them in the settings but this has no high priority right now.
+                if (token.isValidKeyword()) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = Qt::black;
+                    customTextCharFormat.isBold = true;
 
-                //qDebug() << "Is keyword";
-            } else if (token.getType() == VJassToken::Comment) {
-                customTextCharFormat.applyForegroundColor = true;
-                customTextCharFormat.foregroundColor = Qt::gray;
-                customTextCharFormat.isItalic = true;
-                //qDebug() << "Is comment";
-            } else if (token.getType() == VJassToken::TrueKeyword || token.getType() == VJassToken::FalseKeyword) {
-                customTextCharFormat.applyForegroundColor = true;
-                customTextCharFormat.foregroundColor = Qt::blue;
-            } else if (token.getType() == VJassToken::RawCodeLiteral || token.getType() == VJassToken::IntegerLiteral || token.getType() == VJassToken::RealLiteral) {
-                customTextCharFormat.applyForegroundColor = true;
-                customTextCharFormat.foregroundColor = Qt::darkYellow;
-            } else if (token.getType() == VJassToken::StringLiteral) {
-                customTextCharFormat.applyForegroundColor = true;
-                customTextCharFormat.foregroundColor = Qt::red;
-                // TODO highlight escape sequence inside of the string
-            } else if (token.getType() == VJassToken::EscapeLiteral) {
-                customTextCharFormat.applyForegroundColor = true;
-                customTextCharFormat.foregroundColor = QColor(0xFFC0CB);
-            } else if (token.getType() == VJassToken::Text) {
-                // Make a quick check for the symbol from hash sets of standard types and functions so we have these highlighted even without syntax checking
-                if (token.isCommonJType()) {
+                    //qDebug() << "Is keyword";
+                } else if (token.getType() == VJassToken::Comment) {
+                    customTextCharFormat.applyForegroundColor = true;
+                    customTextCharFormat.foregroundColor = Qt::gray;
+                    customTextCharFormat.isItalic = true;
+                    //qDebug() << "Is comment";
+                } else if (token.getType() == VJassToken::TrueKeyword || token.getType() == VJassToken::FalseKeyword) {
                     customTextCharFormat.applyForegroundColor = true;
                     customTextCharFormat.foregroundColor = Qt::blue;
-                } else if (token.isCommonJNative()) {
+                } else if (token.getType() == VJassToken::RawCodeLiteral || token.getType() == VJassToken::IntegerLiteral || token.getType() == VJassToken::RealLiteral) {
                     customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0xba55d3);
-                    customTextCharFormat.isBold = true;
-                } else if (token.isCommonJConstant()) {
+                    customTextCharFormat.foregroundColor = Qt::darkYellow;
+                } else if (token.getType() == VJassToken::StringLiteral) {
                     customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0xff7f50);
-                    customTextCharFormat.isItalic = true;
-                } else if (token.isBlizzardJConstant()) {
-                    //qDebug() << "BlizzardJ COnstant";
+                    customTextCharFormat.foregroundColor = Qt::red;
+                    // TODO highlight escape sequence inside of the string
+                } else if (token.getType() == VJassToken::EscapeLiteral) {
                     customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0x00008b);
-                    customTextCharFormat.isItalic = true;
-                } else if (token.isBlizzardJGlobal()) {
-                    customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0x497c8b);
-                    customTextCharFormat.isItalic = true;
-                } else if (token.isBlizzardJFunction()) {
-                    customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0xff0000);
-                    customTextCharFormat.isBold = true;
-                    // color="#6b8e23" selColor="#ffffff" bold="0" italic="1
-                } else if (token.isCommonAIConstant()) {
-                    customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0x6b8e23);
-                    customTextCharFormat.isItalic = true;
-                } else if (token.isCommonAIGlobal()) {
-                    customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0x5c8e6c);
-                    customTextCharFormat.isItalic = true;
-                } else if (token.isCommonAINative()) {
-                    customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0x218B21);
-                    customTextCharFormat.isBold = true;
-                } else if (token.isCommonAIFunction()) {
-                    customTextCharFormat.applyForegroundColor = true;
-                    customTextCharFormat.foregroundColor = QColor(0x00CD63);
-                    customTextCharFormat.isBold = true;
+                    customTextCharFormat.foregroundColor = QColor(0xFFC0CB);
+                } else if (token.getType() == VJassToken::Text) {
+                    // Make a quick check for the symbol from hash sets of standard types and functions so we have these highlighted even without syntax checking
+                    if (token.isCommonJType()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = Qt::blue;
+                    } else if (token.isCommonJNative()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0xba55d3);
+                        customTextCharFormat.isBold = true;
+                    } else if (token.isCommonJConstant()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0xff7f50);
+                        customTextCharFormat.isItalic = true;
+                    } else if (token.isBlizzardJConstant()) {
+                        //qDebug() << "BlizzardJ COnstant";
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0x00008b);
+                        customTextCharFormat.isItalic = true;
+                    } else if (token.isBlizzardJGlobal()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0x497c8b);
+                        customTextCharFormat.isItalic = true;
+                    } else if (token.isBlizzardJFunction()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0xff0000);
+                        customTextCharFormat.isBold = true;
+                        // color="#6b8e23" selColor="#ffffff" bold="0" italic="1
+                    } else if (token.isCommonAIConstant()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0x6b8e23);
+                        customTextCharFormat.isItalic = true;
+                    } else if (token.isCommonAIGlobal()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0x5c8e6c);
+                        customTextCharFormat.isItalic = true;
+                    } else if (token.isCommonAINative()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0x218B21);
+                        customTextCharFormat.isBold = true;
+                    } else if (token.isCommonAIFunction()) {
+                        customTextCharFormat.applyForegroundColor = true;
+                        customTextCharFormat.foregroundColor = QColor(0x00CD63);
+                        customTextCharFormat.isBold = true;
+                    } else {
+                        qDebug() << "Token type should get some highlighting config:" << token.getValue();
+
+                        Q_ASSERT(false);
+                    }
                 } else {
                     qDebug() << "Token type should get some highlighting config:" << token.getValue();
 
                     Q_ASSERT(false);
                 }
-            } else {
-                qDebug() << "Token type should get some highlighting config:" << token.getValue();
-
-                Q_ASSERT(false);
             }
         }
     }
@@ -115,21 +118,25 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         }
         */
 
-        // store since it takes some time to get all
-        parseErrors = ast->getAllParseErrors();
-        // sort by line and column to show them in the correct order
-        // TODO segmentation fault when accessing the line number of a parse error!
-        /*
-        std::sort(parseErrors.begin(), parseErrors.end(), [](const VJassParseError &p1, const VJassParseError &p2) {
-           const int lineDiff = p1.getLine() - p2.getLine();
+        if (pjassStandardOutput.isEmpty() && pjassErrorOutput.isEmpty()) {
+            // store since it takes some time to get all
+            parseErrors = ast->getAllParseErrors();
+            // sort by line and column to show them in the correct order
+            // TODO segmentation fault when accessing the line number of a parse error!
+            /*
+            std::sort(parseErrors.begin(), parseErrors.end(), [](const VJassParseError &p1, const VJassParseError &p2) {
+               const int lineDiff = p1.getLine() - p2.getLine();
 
-           if (lineDiff == 0) {
-                return p1.getColumn() - p2.getColumn();
-           } else {
-                return lineDiff;
-           }
-        });
-        */
+               if (lineDiff == 0) {
+                    return p1.getColumn() - p2.getColumn();
+               } else {
+                    return lineDiff;
+               }
+            });
+            */
+        } else {
+            parseErrors = PJass::outputToParseErrors(pjassStandardOutput);
+        }
 
         // store all AST elements for the outliner
         QStack<VJassAst*> stack;

@@ -6,6 +6,7 @@
 #include "ui_mainwindow.h"
 #include "vjassscanner.h"
 #include "highlightinfo.h"
+#include "pjass.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,8 +18,14 @@ MainWindow::MainWindow(QWidget *parent)
     , scanAndParseResults(nullptr)
     , scanAndParsePaused(0)
     , stopScanAndParseThread(0)
+    , syntaxChecker(0) // vjasside
+    , parserName("vjasside")
 {
     ui->setupUi(this);
+
+    // make only the text edit expand
+    ui->splitter->setStretchFactor(0, 1);
+    ui->splitter->setStretchFactor(1, 0);
 
     connect(ui->actionNew, &QAction::triggered, this, &MainWindow::newFile);
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile);
@@ -39,11 +46,16 @@ MainWindow::MainWindow(QWidget *parent)
     // trigger a restart so the result is updated even if the text has not changed
     connect(ui->actionComplete, &QAction::triggered, this, &MainWindow::restartTimer);
 
+    // syntax check
     connect(ui->actionEnableSyntaxHighlighting, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
     connect(ui->actionEnableSyntaxCheck, &QAction::changed, this, &MainWindow::updateSyntaxErrorsOnly);
 
+    connect(ui->actionVJassIDESyntaxChecker, &QAction::triggered, this, &MainWindow::updatePJassSyntaxCheckerVJassIDE);
+    connect(ui->actionPJassSyntaxChecker, &QAction::triggered, this, &MainWindow::updatePJassSyntaxCheckerPJass);
+
     connect(ui->actionJASS_Manual, &QAction::triggered, this, &MainWindow::openJASSManual);
     connect(ui->actionCodeOnHive, &QAction::triggered, this, &MainWindow::openCodeOnHive);
+    connect(ui->actionPJassUpdates, &QAction::triggered, this, &MainWindow::openPJassUpdates);
 
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
@@ -119,12 +131,24 @@ MainWindow::MainWindow(QWidget *parent)
                             delete text;
                             text = nullptr;
 
-                            // TODO Allow interrupting by changing scanAndParseInput. Maybe we have to kill the thread and restart it which is also quite expensive.
                             QList<VJassToken> tokens = scanner.scan(input, true);
-                            VJassAst *ast = parser.parse(tokens);
                             qDebug() << "Tokens after scanning" << tokens.size();
+                            VJassAst *ast = parser.parse(tokens);
+                            QString pjassStandardOutput;
+                            QString pjassErrorOutput;
+
+                            // pjass syntax check
+                            if (this->syntaxChecker.loadAcquire() == 1) {
+                                PJass pjass;
+                                int pjassExitCode = pjass.run(input);
+
+                                pjassStandardOutput = pjass.getStandardOutput();
+                                pjassErrorOutput = pjass.getStandardError();
+                                qDebug() << "Using pjass and getting exit code" << pjassExitCode << "and getting standard output:" << pjassStandardOutput << "and error output" << pjassErrorOutput;
+                            }
+
                             // this stores also the required highlighting information
-                            ScanAndParseResults *results = new ScanAndParseResults(input, std::move(tokens), ast);
+                            ScanAndParseResults *results = new ScanAndParseResults(input, std::move(tokens), ast, pjassStandardOutput, pjassErrorOutput);
 
                             if (this->scanAndParsePaused.loadAcquire() == 0) {
                                 // by the end there could be new input and we have to start again
@@ -142,11 +166,11 @@ MainWindow::MainWindow(QWidget *parent)
                                 results = nullptr;
                             }
                         } else {
-                            QThread::sleep(2);
+                            QThread::sleep(1);
                         }
                     } else {
                         //qDebug() << "Waiting for scan and parse input text in thread";
-                        QThread::sleep(2);
+                        QThread::sleep(1);
                     }
                 }
     });
@@ -483,6 +507,10 @@ void MainWindow::openCodeOnHive() {
     QDesktopServices::openUrl(QUrl("https://www.hiveworkshop.com/forums/code.718/"));
 }
 
+void MainWindow::openPJassUpdates() {
+    QDesktopServices::openUrl(QUrl("https://www.hiveworkshop.com/threads/pjass-updates.258738/"));
+}
+
 void MainWindow::aboutDialog() {
     QMessageBox::about(this, tr("Baradé's vJass IDE"), tr("Integrated development environment for the scripting languages JASS and vJass from the computer game Warcraft III. This is an Open Source application based on the Qt framework. Visit <a href=\"https://github.com/tdauth/vjasside\">the GitHub repository</a> to contribute or star it."));
 }
@@ -546,9 +574,9 @@ void MainWindow::updateWindowStatusBar() {
     if (astElementyByLocation.contains(location)) {
         VJassAst *ast = astElementyByLocation[location];
 
-        statusBar()->showMessage(tr("Column: %1, Line: %2      ParserState: %3      %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(ast->toString()));
+        statusBar()->showMessage(tr("Column: %1, Line: %2      ParserState: %3      %4      %5").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName).arg(ast->toString()));
     } else {
-        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState));
+        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3      %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName));
     }
 }
 
@@ -558,6 +586,38 @@ void MainWindow::pauseParserThread() {
 
 void MainWindow::resumeParserThread() {
     scanAndParsePaused.storeRelease(0);
+}
+
+void MainWindow::updatePJassSyntaxCheckerVJassIDE(bool checked) {
+    if (checked) {
+        syntaxChecker.storeRelease(0);
+        parserName ="vjasside";
+    } else {
+        syntaxChecker.storeRelease(1);
+        parserName ="pjass";
+    }
+
+    QSignalBlocker signalBlocker(ui->actionPJassSyntaxChecker);
+    ui->actionPJassSyntaxChecker->setChecked(!checked);
+
+    // this will update the syntax check
+    restartTimer();
+}
+
+void MainWindow::updatePJassSyntaxCheckerPJass(bool checked) {
+    if (checked) {
+        syntaxChecker.storeRelease(1);
+        parserName ="pjass";
+    } else {
+        syntaxChecker.storeRelease(0);
+        parserName ="vjasside";
+    }
+
+    QSignalBlocker signalBlocker(ui->actionVJassIDESyntaxChecker);
+    ui->actionVJassIDESyntaxChecker->setChecked(!checked);
+
+    // this will update the syntax check
+    restartTimer();
 }
 
 void MainWindow::clearAllHighLighting() {

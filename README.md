@@ -9,6 +9,7 @@ Simple standalone IDE for the scripting languages JASS and vJass of the computer
 ## Features
 
 * Cross-platform: All platforms supported by the [Qt framework](https://www.qt.io/).
+* [pjass](https://www.hiveworkshop.com/threads/pjass-updates.258738/) integration.
 * Custom JASS parser not requiring pjass or other external tools.
 * Syntax highlighting.
 * Quick access of standard scripts from Warcraft III.
@@ -33,9 +34,12 @@ However, this project can optimize the GUI for vJass only, removing unnecessary 
 Tools like [JAST 1.1.1](https://www.hiveworkshop.com/threads/jast-1-1-1.325057/) are also standalone IDEs but lack of good performance and basic GUI features.
 Besides, they integrate parsers like [pjass](https://www.hiveworkshop.com/threads/pjass-updates.258738/) instead of checking the syntax live.
 
-This IDE tries to check syntax while writing the code and give some meaningful context-related suggestions in the auto completion.
+In the past there has been [JassCraft](https://sourceforge.net/projects/jasscraft/) but it has not received any updates since 2013, has no vJass support and no auto completion at all.
+It still provides some interesting features like an MPQ browser, Code Inspector, Templates and multiple source files as source for the Native List.
 
-## Architecture
+This IDE checks the syntax while writing the code and provides some meaningful context-related auto completion.
+
+## Software Architecture
 
 The IDE is written in C++ and requires only the [Qt framework](https://www.qt.io/).
 It can be used on all platforms which are supported by the Qt framework.

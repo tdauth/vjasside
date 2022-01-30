@@ -51,6 +51,7 @@ public slots:
 
     void openJASSManual();
     void openCodeOnHive();
+    void openPJassUpdates();
 
     void aboutDialog();
 
@@ -72,6 +73,9 @@ private slots:
     void highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax);
     void outputListItemDoubleClicked(QListWidgetItem *item);
     void outlinerListItemDoubleClicked(QListWidgetItem *item);
+
+    void updatePJassSyntaxCheckerVJassIDE(bool checked);
+    void updatePJassSyntaxCheckerPJass(bool checked);
 
     void clearAllHighLighting();
 
@@ -104,8 +108,10 @@ private:
         QList<VJassToken> tokens;
         // TODO keep on stack but without heap there happens weird stuff on copying!
         VJassAst *ast;
+        QString pjassStandardOutput;
+        QString pjassErrorOutput;
 
-        ScanAndParseResults(const QString &text, QList<VJassToken> &&tokens, VJassAst *ast) : highLightInfo(text, tokens, ast) /* initialize after moving tokens */, tokens(std::move(tokens)), ast(ast) {
+        ScanAndParseResults(const QString &text, QList<VJassToken> &&tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput) : highLightInfo(text, tokens, ast, pjassStandardOutput, pjassErrorOutput, false, false) /* initialize after moving tokens */, tokens(std::move(tokens)), ast(ast) {
         }
 
         virtual ~ScanAndParseResults() {
@@ -123,6 +129,8 @@ private:
     QAtomicInt scanAndParsePaused;
     QThread *scanAndParseThread;
     QAtomicInt stopScanAndParseThread;
+    QAtomicInt syntaxChecker; // 0 - vjasside, 1 - pjass
+    QString parserName;
     bool syncDocumentState = true;
 
     // for the outliner

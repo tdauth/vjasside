@@ -579,7 +579,49 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 result->setType(VJassExpression::True);
                 result->setValue(nextToken.getValue());
 
-                // TODO Look for operators
+                const int j = i + 1;
+
+                if (!hasReachedEndOfLine(tokens, j)) {
+                    const VJassToken &bracket = tokens.at(j);
+
+                    // comparison
+                    if (bracket.getType() == VJassToken::ComparisonOperator && (bracket.getValue() == "==" || bracket.getValue() == "!=")) {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        if (bracket.getValue() == "==") {
+                            operation->setType(VJassExpression::Equals);
+                        } else if (bracket.getValue() == "!=") {
+                            operation->setType(VJassExpression::NotEquals);
+                        }
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
+                    // concatenation
+                    } else if (bracket.getType() == VJassToken::AndKeyword || bracket.getType() == VJassToken::OrKeyword) {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        if (bracket.getType() == VJassToken::AndKeyword) {
+                            operation->setType(VJassExpression::And);
+                        } else {
+                            operation->setType(VJassExpression::Or);
+                        }
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
+                    }
+                }
 
                 break;
             }
@@ -588,17 +630,82 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 result->setType(VJassExpression::False);
                 result->setValue(nextToken.getValue());
 
-                // TODO Look for operators
+                const int j = i + 1;
+
+                if (!hasReachedEndOfLine(tokens, j)) {
+                    const VJassToken &bracket = tokens.at(j);
+
+                    // comparison
+                    if (bracket.getType() == VJassToken::ComparisonOperator && (bracket.getValue() == "==" || bracket.getValue() == "!=")) {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        if (bracket.getValue() == "==") {
+                            operation->setType(VJassExpression::Equals);
+                        } else if (bracket.getValue() == "!=") {
+                            operation->setType(VJassExpression::NotEquals);
+                        }
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
+                    // concatenation
+                    } else if (bracket.getType() == VJassToken::AndKeyword || bracket.getType() == VJassToken::OrKeyword) {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        if (bracket.getType() == VJassToken::AndKeyword) {
+                            operation->setType(VJassExpression::And);
+                        } else {
+                            operation->setType(VJassExpression::Or);
+                        }
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
+                    }
+                }
 
                 break;
-            // TODO Check keywords like not and boolean operators
             }
             case VJassToken::NullKeyword: {
                 result = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
                 result->setType(VJassExpression::Null);
                 result->setValue(nextToken.getValue());
 
-                // TODO Look for operators
+                const int j = i + 1;
+
+                if (!hasReachedEndOfLine(tokens, j)) {
+                    const VJassToken &bracket = tokens.at(j);
+
+                    // comparison
+                    if (bracket.getType() == VJassToken::ComparisonOperator && (bracket.getValue() == "==" || bracket.getValue() == "!=")) {
+                        VJassExpression *operation = new VJassExpression(nextToken.getLine(), nextToken.getColumn());
+
+                        if (bracket.getValue() == "==") {
+                            operation->setType(VJassExpression::Equals);
+                        } else if (bracket.getValue() == "!=") {
+                            operation->setType(VJassExpression::NotEquals);
+                        }
+
+                        i++;
+                        VJassExpression *rightOperation = parseExpression(tokens, token, ast, i);
+
+                        if (rightOperation != nullptr) {
+                            operation->addChild(rightOperation);
+                        }
+
+                        result = operation;
+                    }
+                }
 
                 break;
             }

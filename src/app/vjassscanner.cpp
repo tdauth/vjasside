@@ -7,7 +7,7 @@ VJassScanner::VJassScanner()
 
 }
 
-inline bool isFollowedBySpace(const QString &currentContent, int length) {
+inline bool isNotFollowedByIdentifier(const QString &currentContent, int length) {
     // TODO Space and operators cannot follow but not text
     return length == currentContent.length() || !QRegularExpression("[A-Za-z_0-9]{1}").match(currentContent.mid(length, 1)).hasMatch();
 }
@@ -25,14 +25,14 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
         bool matched = false;
 
         // boolean literal true
-        if (currentContent.startsWith(VJassToken::KEYWORD_TRUE) && isFollowedBySpace(currentContent, VJassToken::KEYWORD_TRUE.length())) {
+        if (currentContent.startsWith(VJassToken::KEYWORD_TRUE) && isNotFollowedByIdentifier(currentContent, VJassToken::KEYWORD_TRUE.length())) {
             const int length = VJassToken::KEYWORD_TRUE.length();
             result.push_back(VJassToken(currentContent.mid(i, length), line, column, VJassToken::TrueKeyword));
             column += length;
             i += length;
             matched = true;
         // boolean literal false
-        } else if (currentContent.startsWith(VJassToken::KEYWORD_FALSE) && isFollowedBySpace(currentContent, VJassToken::KEYWORD_FALSE.length())) {
+        } else if (currentContent.startsWith(VJassToken::KEYWORD_FALSE) && isNotFollowedByIdentifier(currentContent, VJassToken::KEYWORD_FALSE.length())) {
             const int length = VJassToken::KEYWORD_FALSE.length();
             result.push_back(VJassToken(currentContent.mid(i, length), line, column, VJassToken::FalseKeyword));
             column += length;
@@ -42,7 +42,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
 
         if (!matched) {
             for (const QString &keyword : VJassToken::KEYWRODS_ALL) { // TODO Except TRUE and FALSE
-                if (currentContent.startsWith(keyword) && isFollowedBySpace(currentContent, keyword.length())) {
+                if (currentContent.startsWith(keyword) && isNotFollowedByIdentifier(currentContent, keyword.length())) {
                     result.push_back(VJassToken(keyword, line, column, VJassToken::typeFromKeyword(keyword)));
                     i += keyword.length();
                     column += keyword.length();

@@ -76,7 +76,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -210,12 +210,6 @@
     <addaction name="actionClose"/>
     <addaction name="actionQuit"/>
    </widget>
-   <widget class="QMenu" name="menuAuto_Completion">
-    <property name="title">
-     <string>Auto Completion</string>
-    </property>
-    <addaction name="actionComplete"/>
-   </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
      <string>About</string>
@@ -224,10 +218,15 @@
    </widget>
    <widget class="QMenu" name="menuAutomaticAnalysis">
     <property name="title">
-     <string>Automatic Analysis</string>
+     <string>Syntax</string>
     </property>
     <addaction name="actionEnableSyntaxHighlighting"/>
     <addaction name="actionEnableSyntaxCheck"/>
+    <addaction name="separator"/>
+    <addaction name="actionComplete"/>
+    <addaction name="separator"/>
+    <addaction name="actionVJassIDESyntaxChecker"/>
+    <addaction name="actionPJassSyntaxChecker"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -250,6 +249,7 @@
     <addaction name="actionJASS_Manual"/>
     <addaction name="actionJassHelper"/>
     <addaction name="actionpjass"/>
+    <addaction name="actionPJassUpdates"/>
    </widget>
    <widget class="QMenu" name="menuStandard_Scripts">
     <property name="title">
@@ -269,7 +269,6 @@
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuStandard_Scripts"/>
-   <addaction name="menuAuto_Completion"/>
    <addaction name="menuAutomaticAnalysis"/>
    <addaction name="menuSettings"/>
    <addaction name="menuOnline"/>
@@ -416,6 +415,30 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="actionPJassUpdates">
+   <property name="text">
+    <string>pjass Updates</string>
+   </property>
+  </action>
+  <action name="actionVJassIDESyntaxChecker">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>vjasside</string>
+   </property>
+  </action>
+  <action name="actionPJassSyntaxChecker">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>pjass</string>
    </property>
   </action>
  </widget>

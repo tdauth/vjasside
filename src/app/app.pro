@@ -14,6 +14,7 @@ SOURCES += \
     autocompletionpopup.cpp \
     highlightinfo.cpp \
     linenumbers.cpp \
+    pjass.cpp \
     textedit.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     autocompletionpopup.h \
     highlightinfo.h \
     linenumbers.h \
+    pjass.h \
     textedit.h \
     mainwindow.h \
     syntaxhighlighter.h \
@@ -63,11 +65,14 @@ FORMS += \
     linenumbers.ui \
     mainwindow.ui
 
-COPIES += wc3reforgedscripts
+COPIES += wc3reforgedscripts pjass
 
 wc3reforgedscripts.files += $$files(../../wc3reforged/*.j) \
                             $$files(../../wc3reforged/*.ai)
 wc3reforgedscripts.path = $$OUT_PWD/wc3reforged
+
+pjass.files += $$files(../../pjass/*.exe)
+pjass.path = $$OUT_PWD/pjass
 
 #message("My scripts: " + $$files(../../wc3reforged/*.j) + " copied into " + $$OUT_PWD/wc3reforged)
 

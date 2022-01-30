@@ -16,7 +16,7 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
 
     VJassScanner scanner;
     QList<VJassToken> tokens = scanner.scan(text, true);
-    HighLightInfo highLightInfo(text, tokens, nullptr, false);
+    HighLightInfo highLightInfo(text, tokens, nullptr, "", "", true, false);
 
     const QMap<HighLightInfo::Location, HighLightInfo::CustomTextCharFormat> &formattedLocations = highLightInfo.getFormattedLocations();
 
