@@ -64,7 +64,7 @@ void TestParser::canParseCommonAI() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 21018);
+    QCOMPARE(tokens.size(), 20830);
     QCOMPARE(input.size(), 95876);
 
     QBENCHMARK {
@@ -107,14 +107,14 @@ void TestParser::canParseBlizzardJ() {
         tokens = scanner.scan(input, false);
     }
 
-    QCOMPARE(tokens.size(), 84823);
+    QCOMPARE(tokens.size(), 84221);
     QCOMPARE(input.size(), 471054);
 
     QBENCHMARK {
         tokens = scanner.scan(input, true);
     }
 
-    QCOMPARE(tokens.size(), 56574);
+    QCOMPARE(tokens.size(), 56039);
     QCOMPARE(input.size(), 471054);
 
     VJassParser parser;
@@ -127,6 +127,49 @@ void TestParser::canParseBlizzardJ() {
     QVERIFY(ast != nullptr);
     QCOMPARE(ast->getChildren().size(), 1067);
     // no syntax errors
+    QCOMPARE(ast->getParseErrors().size(), 0);
+
+    delete ast;
+    ast = nullptr;
+}
+
+
+void TestParser::canParseNestedExpression() {
+    const QString input =
+            QString("function bla takes nothing returns nothing\n")
+            + "local integer x = -((50 - R2I(10.0)) * ModuloInteger(10, 5) / 3) + (10)\n"
+            + "endfunction";
+
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens;
+    tokens = scanner.scan(input, false);
+    VJassParser parser;
+    VJassAst *ast = parser.parse(tokens);
+
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 1);
+    QCOMPARE(ast->getParseErrors().size(), 0);
+
+    delete ast;
+    ast = nullptr;
+}
+
+void TestParser::canParseSetStatement() {
+    const QString input =
+            QString("function bla takes nothing returns nothing\n")
+            + "set x[10] = 10\n"
+            + "endfunction";
+
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens;
+    tokens = scanner.scan(input, false);
+    VJassParser parser;
+    VJassAst *ast = parser.parse(tokens);
+
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 1);
     QCOMPARE(ast->getParseErrors().size(), 0);
 
     delete ast;

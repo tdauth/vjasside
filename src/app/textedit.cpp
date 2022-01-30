@@ -4,6 +4,7 @@
 #include "textedit.h"
 
 TextEdit::TextEdit(QWidget *parent) : QPlainTextEdit(parent), pressedControl(false) {
+    setLineWrapMode(QPlainTextEdit::NoWrap);
 }
 
 TextEdit::~TextEdit() {

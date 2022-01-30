@@ -497,10 +497,13 @@ void MainWindow::restartTimer() {
     timerId = startTimer(2000);
 
     // TODO Restart the thread, so it will wait for the next user input instead of continuing with the current scanning/parsing/highlighting.
+
+    updateWindowStatusBar();
 }
 
 void MainWindow::documentChanges() {
     documentHasChanged = true;
+    syncDocumentState = false;
     updateWindowTitle();
     updateLineNumbers();
 }
@@ -527,10 +530,26 @@ void MainWindow::updateSelectedLines() {
 
     ui->lineNumbersWidget->updateSelectedLines(lineStart, lineEnd);
 
+    updateWindowStatusBar();
+}
+
+void MainWindow::updateWindowStatusBar() {
     const int currentColumn = ui->textEdit->textCursor().positionInBlock();
     const int currentLine = ui->textEdit->textCursor().blockNumber();
+    const HighLightInfo::Location location = HighLightInfo::Location(currentLine, currentColumn);
 
-    statusBar()->showMessage(tr("Column: %1, Line: %2").arg(currentColumn + 1).arg(currentLine + 1));
+    qDebug() << "Size of AST elements by location" << astElementyByLocation.size();
+    qDebug() << "Location line" << location.line << "and column" << location.column;
+
+    const QString parserState = timerId != 0 ? tr("Waiting for user stopping") : (syncDocumentState ? tr("Done") : tr("Parsing"));
+
+    if (astElementyByLocation.contains(location)) {
+        VJassAst *ast = astElementyByLocation[location];
+
+        statusBar()->showMessage(tr("Column: %1, Line: %2      ParserState: %3      %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(ast->toString()));
+    } else {
+        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState));
+    }
 }
 
 void MainWindow::pauseParserThread() {
@@ -598,6 +617,8 @@ void MainWindow::timerEvent(QTimerEvent *event) {
         //qassert(text.isDetached());
         scanAndParseInput.storeRelease(new QString(text));
         scanAndParseResults.storeRelease(nullptr);
+
+        updateWindowStatusBar();
     } else if (timerId == 0 && event->timerId() == timerIdCheck) {
         //qDebug() << "Checking scan and parse result";
 
@@ -605,6 +626,9 @@ void MainWindow::timerEvent(QTimerEvent *event) {
 
         // if there are results we will highlight everything now
         if (scanAndParseResults != nullptr) {
+            syncDocumentState = true;
+            updateWindowStatusBar();
+
             qDebug() << "Got scan and parse result from thread into the main window";
 
             bool checkSyntax = ui->actionEnableSyntaxCheck->isChecked();
@@ -649,7 +673,9 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                     }
 
                     astElements.clear();
+                    astElementyByLocation.clear();
                     astElements = scanAndParseResults->highLightInfo.getAstElements();
+                    astElementyByLocation = scanAndParseResults->highLightInfo.getAstElementsByLocation();
 
                     updateOutliner();
 

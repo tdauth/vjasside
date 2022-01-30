@@ -39,6 +39,9 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
                 customTextCharFormat.applyForegroundColor = true;
                 customTextCharFormat.foregroundColor = Qt::red;
                 // TODO highlight escape sequence inside of the string
+            } else if (token.getType() == VJassToken::EscapeLiteral) {
+                customTextCharFormat.applyForegroundColor = true;
+                customTextCharFormat.foregroundColor = QColor(0xFFC0CB);
             } else if (token.getType() == VJassToken::Text) {
                 // Make a quick check for the symbol from hash sets of standard types and functions so we have these highlighted even without syntax checking
                 if (token.isCommonJType()) {
@@ -142,6 +145,8 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
                 ) {
                 astElements.push_back(a);
             }
+
+            astElementsByLocation.insert(Location(a->getLine(), a->getColumn()), a);
 
             for (VJassAst *child : a->getChildren()) {
                 stack.push_back(child);
@@ -269,6 +274,10 @@ const QList<VJassParseError>& HighLightInfo::getParseErrors() const {
 
 const QList<VJassAst*>& HighLightInfo::getAstElements() const {
     return astElements;
+}
+
+const QMap<HighLightInfo::Location, VJassAst*>& HighLightInfo::getAstElementsByLocation() const {
+    return astElementsByLocation;
 }
 
 HighLightInfo::CustomTextCharFormat& HighLightInfo::getCustomTextCharFormat(int line, int column) {

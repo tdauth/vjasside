@@ -133,7 +133,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
                 lines += lines;
                 i += length;
             // Comparison Operator
-            } else if (currentContent.startsWith("==") || currentContent.startsWith("<=") || currentContent.startsWith(">=") || currentContent.startsWith("!=")) {
+            } else if (currentContent.startsWith("<") || currentContent.startsWith(">") || currentContent.startsWith("==") || currentContent.startsWith("<=") || currentContent.startsWith(">=") || currentContent.startsWith("!=")) {
                 const int length = 2;
                 result.push_back(VJassToken(content.mid(i, length), line, column, VJassToken::ComparisonOperator));
                 column += length;

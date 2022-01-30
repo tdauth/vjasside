@@ -22,12 +22,17 @@ public:
         And,
         Or,
         Not,
-        Positive,
         Negative,
         Sum,
         Substraction,
         Multiplication,
-        Division
+        Division,
+        Equals,
+        NotEquals,
+        GreaterThan,
+        LessThan,
+        LessThanOrEquals,
+        GreaterThanOrEquals
     };
 
     void setValue(const QString &value);

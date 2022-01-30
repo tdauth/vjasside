@@ -11,6 +11,8 @@ class TestParser : public QObject
         void canParseCommonJ();
         void canParseCommonAI();
         void canParseBlizzardJ();
+        void canParseNestedExpression();
+        void canParseSetStatement();
 };
 
 #endif // TESTPARSER_H

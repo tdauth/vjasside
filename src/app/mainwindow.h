@@ -62,6 +62,8 @@ public slots:
 
     void updateSelectedLines();
 
+    void updateWindowStatusBar();
+
     void pauseParserThread();
     void resumeParserThread();
 
@@ -121,8 +123,12 @@ private:
     QAtomicInt scanAndParsePaused;
     QThread *scanAndParseThread;
     QAtomicInt stopScanAndParseThread;
+    bool syncDocumentState = true;
 
     // for the outliner
     QList<VJassAst*> astElements;
+
+    // for refactoring
+    QMap<HighLightInfo::Location, VJassAst*> astElementyByLocation;
 };
 #endif // MAINWINDOW_H

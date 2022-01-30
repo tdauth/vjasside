@@ -61,8 +61,7 @@ HEADERS += \
 
 FORMS += \
     linenumbers.ui \
-    mainwindow.ui \
-    textedit.ui
+    mainwindow.ui
 
 COPIES += wc3reforgedscripts
 

@@ -82,6 +82,7 @@ public:
     QTextDocument* getTextDocument() const;
     const QList<VJassParseError>& getParseErrors() const;
     const QList<VJassAst*>& getAstElements() const;
+    const QMap<Location, VJassAst*>& getAstElementsByLocation() const;
 
     static QFont getNormalFont();
     static void applyNormalFormat(QTextCharFormat &textCharFormat);
@@ -95,6 +96,7 @@ private:
     QList<QTextEdit::ExtraSelection> extraSelections;
     QList<VJassParseError> parseErrors;
     QList<VJassAst*> astElements;
+    QMap<Location, VJassAst*> astElementsByLocation;
 };
 
 inline bool operator<(const HighLightInfo::Location &e1, const HighLightInfo::Location &e2) {
