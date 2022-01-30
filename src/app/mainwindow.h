@@ -77,11 +77,14 @@ private slots:
     void updatePJassSyntaxCheckerVJassIDE(bool checked);
     void updatePJassSyntaxCheckerPJass(bool checked);
 
+    void updateCurrentLineHighLighting();
+
     void clearAllHighLighting();
 
     void updateOutliner();
 
     friend class TestMainWindow;
+    friend class SyntaxHighLighter;
 
 protected:
     virtual void timerEvent(QTimerEvent *event) override;
@@ -89,6 +92,8 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+
+    int currentLine = 0;
 
     bool documentHasChanged = false;
     QString fileDir;

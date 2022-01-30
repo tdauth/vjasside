@@ -5,9 +5,13 @@
 
 class SyntaxHighlighter : public QSyntaxHighlighter
 {
+    Q_OBJECT
+
 public:
     SyntaxHighlighter(QTextDocument *parent);
-    SyntaxHighlighter(QObject *parent);
+
+signals:
+    void updatedHighlighting();
 
 protected:
     virtual void highlightBlock(const QString &text) override;

@@ -106,6 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
     resetDocumentChanges();
 
     syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
+    connect(syntaxHighlighter, &SyntaxHighlighter::updatedHighlighting, this, &MainWindow::updateCurrentLineHighLighting);
 
     /*
      * Scan, parse and prestore highlighting information concurrently to avoid blocking the GUI.
@@ -166,11 +167,11 @@ MainWindow::MainWindow(QWidget *parent)
                                 results = nullptr;
                             }
                         } else {
-                            QThread::sleep(1);
+                            QThread::msleep(300);
                         }
                     } else {
                         //qDebug() << "Waiting for scan and parse input text in thread";
-                        QThread::sleep(1);
+                        QThread::msleep(300);
                     }
                 }
     });
@@ -558,6 +559,8 @@ void MainWindow::updateSelectedLines() {
 
     ui->lineNumbersWidget->updateSelectedLines(lineStart, lineEnd);
 
+    updateCurrentLineHighLighting();
+
     updateWindowStatusBar();
 }
 
@@ -620,6 +623,46 @@ void MainWindow::updatePJassSyntaxCheckerPJass(bool checked) {
     restartTimer();
 }
 
+void MainWindow::updateCurrentLineHighLighting() {
+    qDebug() << "Update line highlighting!";
+
+    // mark current line with different background color
+    QSignalBlocker signalBlock(ui->textEdit->document());
+    QSignalBlocker signalBlock2(ui->textEdit);
+    QSignalBlocker signalBlock3(syntaxHighlighter);
+
+    // clear format of the whole document
+    QTextCursor textCursor(ui->textEdit->document());
+    textCursor.setPosition(0);
+    textCursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+    QTextBlockFormat textBlockFormat = textCursor.blockFormat();
+    QTextCharFormat textCharFormat = textCursor.blockCharFormat();
+    textBlockFormat.setBackground(QColor(0xffffff));
+    textCharFormat.setBackground(QColor(0xffffff));
+    textCursor.setBlockFormat(textBlockFormat);
+    textCursor.setBlockCharFormat(textCharFormat);
+
+    // clear the char format of the previous line
+    QTextBlock currentTextBlock = ui->textEdit->document()->findBlockByLineNumber(currentLine);
+
+    if (currentTextBlock.isValid() && currentTextBlock.length() > 0) {
+        // TODO Crashes.
+        //syntaxHighlighter->rehighlightBlock(currentTextBlock);
+    }
+
+    // highlight the current line
+    currentLine = ui->textEdit->textCursor().blockNumber();
+    textCursor.setPosition(0);
+    textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, currentLine);
+    textCursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+    textBlockFormat = textCursor.blockFormat();
+    textCharFormat = textCursor.blockCharFormat();
+    textBlockFormat.setBackground(QColor(0xfaf5d4));
+    textCharFormat.setBackground(QColor(0xfaf5d4));
+    textCursor.setBlockFormat(textBlockFormat);
+    textCursor.setBlockCharFormat(textCharFormat);
+}
+
 void MainWindow::clearAllHighLighting() {
     //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
     //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
@@ -656,7 +699,7 @@ void MainWindow::updateOutliner() {
     }
 
     if (ui->outlinerListWidget->count() == 0) {
-        ui->outlinerListWidget->addItem(tr("Nothing to outline."));
+        ui->outlinerListWidget->addItem(tr("No matching elements."));
         ui->tabWidget->setTabText(1, tr("0 Elements"));
     } else {
         ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", astElements.length()));

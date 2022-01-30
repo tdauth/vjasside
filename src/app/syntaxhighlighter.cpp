@@ -8,11 +8,9 @@
 SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent) {
 }
 
-SyntaxHighlighter::SyntaxHighlighter(QObject *parent) : QSyntaxHighlighter(parent) {
-}
-
 void SyntaxHighlighter::highlightBlock(const QString &text) {
     //qDebug() << "Highlight block" << text;
+    qDebug() << "High light block by syntax highlighter";
 
     VJassScanner scanner;
     QList<VJassToken> tokens = scanner.scan(text, true);
@@ -25,6 +23,9 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
         const HighLightInfo::CustomTextCharFormat &customTextCharFormat = iterator->second;
         QTextCharFormat fmt = highLightInfo.getNormalFormat();
         customTextCharFormat.applyToTextCharFormat(fmt, false);
+        fmt.setBackground(QBrush()); // do not apply any background color
         setFormat(location.column, customTextCharFormat.length, fmt);
     }
+
+    emit updatedHighlighting();
 }
