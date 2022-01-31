@@ -14,6 +14,7 @@ SOURCES -= ../app/linenumbers.cpp
 SOURCES -= ../app/highlightinfo.cpp
 SOURCES -= ../app/textedit.cpp
 SOURCES -= ../app/syntaxhighlighter.cpp
+SOURCES -= ../app/finddialog.cpp
 
 # message("My sources: " + $$SOURCES)
 
@@ -24,6 +25,7 @@ HEADERS -= ../app/linenumbers.h
 HEADERS -= ../app/highlightinfo.h
 HEADERS -= ../app/textedit.h
 HEADERS -= ../app/syntaxhighlighter.h
+HEADERS -= ../app/finddialog.h
 
 SOURCES += \
     main.cpp

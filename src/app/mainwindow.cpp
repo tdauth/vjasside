@@ -11,6 +11,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , findDialog(new FindDialog(this))
     , popup(new AutoCompletionPopup)
     , timerId(0)
     , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
@@ -22,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     , parserName("vjasside")
 {
     ui->setupUi(this);
+    findDialog->hide();
     syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
 
     // make only the text edit expand
@@ -35,6 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
     connect(ui->actionGoToLine, &QAction::triggered, this, &MainWindow::goToLine);
+    connect(ui->actionFindAndReplace, &QAction::triggered, this, &MainWindow::findAndReplace);
     connect(ui->actionApplyColor, &QAction::triggered, this, &MainWindow::applyColor);
 
     connect(ui->actionCommonj, &QAction::triggered, this, &MainWindow::openCommonj);
@@ -315,6 +318,12 @@ void MainWindow::goToLine() {
         ui->textEdit->setTextCursor(textCursor);
         updateLineNumbers();
     }
+}
+
+void MainWindow::findAndReplace() {
+    findDialog->show();
+    findDialog->activateWindow();
+    findDialog->raise();
 }
 
 void MainWindow::applyColor() {

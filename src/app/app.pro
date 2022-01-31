@@ -12,6 +12,7 @@ CONFIG += file_copies
 
 SOURCES += \
     autocompletionpopup.cpp \
+    finddialog.cpp \
     highlightinfo.cpp \
     linenumbers.cpp \
     pjass.cpp \
@@ -38,6 +39,7 @@ SOURCES += \
 
 HEADERS += \
     autocompletionpopup.h \
+    finddialog.h \
     highlightinfo.h \
     linenumbers.h \
     pjass.h \
@@ -62,6 +64,7 @@ HEADERS += \
     vjasstype.h
 
 FORMS += \
+    finddialog.ui \
     linenumbers.ui \
     mainwindow.ui
 

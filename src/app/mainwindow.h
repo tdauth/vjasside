@@ -13,6 +13,7 @@
 #include "syntaxhighlighter.h"
 #include "autocompletionpopup.h"
 #include "highlightinfo.h"
+#include "finddialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -34,6 +35,7 @@ public slots:
     void quit();
 
     void goToLine();
+    void findAndReplace();
     void applyColor();
 
     void openCommonj();
@@ -93,6 +95,8 @@ protected:
 
 private:
     Ui::MainWindow *ui;
+
+    FindDialog *findDialog = nullptr;
 
     // selection
     int currentLineStart = 0;
