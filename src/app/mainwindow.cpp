@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionQuit, &QAction::triggered, this, &MainWindow::quit);
 
     connect(ui->actionGoToLine, &QAction::triggered, this, &MainWindow::goToLine);
+    connect(ui->actionApplyColor, &QAction::triggered, this, &MainWindow::applyColor);
 
     connect(ui->actionCommonj, &QAction::triggered, this, &MainWindow::openCommonj);
     connect(ui->actionCommonAi, &QAction::triggered, this, &MainWindow::openCommonai);
@@ -313,6 +314,20 @@ void MainWindow::goToLine() {
         textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line - 1);
         ui->textEdit->setTextCursor(textCursor);
         updateLineNumbers();
+    }
+}
+
+void MainWindow::applyColor() {
+    QColor color = QColorDialog::getColor(QColor(0xffcc00), this, tr("Apply Color"));
+
+    if (color.isValid()) {
+        if (ui->textEdit->textCursor().hasSelection()) {
+            const QString selectionWithColor = "|cff" + color.name().mid(1) + ui->textEdit->textCursor().selection().toPlainText() + "|r";
+            ui->textEdit->textCursor().removeSelectedText();
+            ui->textEdit->insertPlainText(selectionWithColor);
+        } else {
+            ui->textEdit->insertPlainText("|cff" + color.name().mid(1) + "MY_TEXT" + "|r");
+        }
     }
 }
 
@@ -665,7 +680,7 @@ void MainWindow::updateCurrentLineHighLighting() {
 
     textCursor.setPosition(originalPosition);
 
-    qDebug() << "Selection line start" << currentLineStart << "and end" << currentLineEnd;
+    //qDebug() << "Selection line start" << currentLineStart << "and end" << currentLineEnd;
 }
 
 void MainWindow::clearAllHighLighting() {

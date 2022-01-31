@@ -34,6 +34,7 @@ public slots:
     void quit();
 
     void goToLine();
+    void applyColor();
 
     void openCommonj();
     void openCommonai();

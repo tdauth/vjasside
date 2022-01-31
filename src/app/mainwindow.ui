@@ -197,7 +197,7 @@
      <x>0</x>
      <y>0</y>
      <width>612</width>
-     <height>17</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -264,6 +264,7 @@
      <string>Edit</string>
     </property>
     <addaction name="actionGoToLine"/>
+    <addaction name="actionApplyColor"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -439,6 +440,11 @@
    </property>
    <property name="text">
     <string>pjass</string>
+   </property>
+  </action>
+  <action name="actionApplyColor">
+   <property name="text">
+    <string>Apply Color</string>
    </property>
   </action>
  </widget>
