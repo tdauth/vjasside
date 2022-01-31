@@ -22,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     , parserName("vjasside")
 {
     ui->setupUi(this);
+    syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
 
     // make only the text edit expand
     ui->splitter->setStretchFactor(0, 1);
@@ -67,6 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->textEdit->horizontalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
     connect(ui->textEdit->verticalScrollBar(), &QScrollBar::valueChanged, this, &MainWindow::updateLineNumbers);
 
+    // whenever the cursor position changes, the selection needs to be updated but also the background color/syntax highlighting
     connect(ui->textEdit, &QPlainTextEdit::cursorPositionChanged, this, &MainWindow::updateSelectedLines);
 
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
@@ -105,9 +107,6 @@ MainWindow::MainWindow(QWidget *parent)
     // initial document is empty
     resetDocumentChanges();
 
-    syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
-    connect(syntaxHighlighter, &SyntaxHighlighter::updatedHighlighting, this, &MainWindow::updateCurrentLineHighLighting);
-
     /*
      * Scan, parse and prestore highlighting information concurrently to avoid blocking the GUI.
      */
@@ -145,7 +144,7 @@ MainWindow::MainWindow(QWidget *parent)
 
                                 pjassStandardOutput = pjass.getStandardOutput();
                                 pjassErrorOutput = pjass.getStandardError();
-                                qDebug() << "Using pjass and getting exit code" << pjassExitCode << "and getting standard output:" << pjassStandardOutput << "and error output" << pjassErrorOutput;
+                                qDebug() << "Using pjass and getting exit code" << pjassExitCode;
                             }
 
                             // this stores also the required highlighting information
@@ -624,49 +623,40 @@ void MainWindow::updatePJassSyntaxCheckerPJass(bool checked) {
 }
 
 void MainWindow::updateCurrentLineHighLighting() {
-    qDebug() << "Update line highlighting!";
+    QSignalBlocker signalBlocker(ui->textEdit);
 
-    // mark current line with different background color
-    QSignalBlocker signalBlock(ui->textEdit->document());
-    QSignalBlocker signalBlock2(ui->textEdit);
-    QSignalBlocker signalBlock3(syntaxHighlighter);
-
-    // clear format of the whole document
-    QTextCursor textCursor(ui->textEdit->document());
-    textCursor.setPosition(0);
-    textCursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-    QTextBlockFormat textBlockFormat = textCursor.blockFormat();
-    QTextCharFormat textCharFormat = textCursor.blockCharFormat();
-    textBlockFormat.setBackground(QColor(0xffffff));
-    textCharFormat.setBackground(QColor(0xffffff));
-    textCursor.setBlockFormat(textBlockFormat);
-    textCursor.setBlockCharFormat(textCharFormat);
-
-    // clear the char format of the previous line
-    QTextBlock currentTextBlock = ui->textEdit->document()->findBlockByLineNumber(currentLine);
-
-    if (currentTextBlock.isValid() && currentTextBlock.length() > 0) {
-        // TODO Crashes.
-        //syntaxHighlighter->rehighlightBlock(currentTextBlock);
-    }
-
-    // highlight the current line
+    const int previousLine = currentLine;
     currentLine = ui->textEdit->textCursor().blockNumber();
+
+    QTextCursor textCursor = ui->textEdit->textCursor();
+    const int originalPosition = textCursor.position();
+    QTextBlockFormat textBlockFormat;
+
+    textCursor.setPosition(0);
+    textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, previousLine);
+    textCursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+    textBlockFormat.setBackground(QColor(0xffffff));
+    textCursor.setBlockFormat(textBlockFormat);
+
     textCursor.setPosition(0);
     textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, currentLine);
     textCursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
-    textBlockFormat = textCursor.blockFormat();
-    textCharFormat = textCursor.blockCharFormat();
     textBlockFormat.setBackground(QColor(0xfaf5d4));
-    textCharFormat.setBackground(QColor(0xfaf5d4));
     textCursor.setBlockFormat(textBlockFormat);
-    textCursor.setBlockCharFormat(textCharFormat);
+
+    const QTextBlock previousTextBlock = syntaxHighlighter->document()->findBlockByLineNumber(previousLine);
+    const QTextBlock currentTextBlock = syntaxHighlighter->document()->findBlockByLineNumber(currentLine);
+
+    //qDebug() << "Update line highlighting with previous line" << previousLine << "and current line" << currentLine;
+
+    syntaxHighlighter->setCurrentLine(currentLine);
+    syntaxHighlighter->rehighlightBlock(previousTextBlock);
+    syntaxHighlighter->rehighlightBlock(currentTextBlock);
+
+    textCursor.setPosition(originalPosition);
 }
 
 void MainWindow::clearAllHighLighting() {
-    //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    //disconnect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
-
     QSignalBlocker signalBlocker(ui->textEdit);
     QTextCursor cursor(ui->textEdit->document());
     QTextCharFormat fmtNormal;
@@ -675,9 +665,6 @@ void MainWindow::clearAllHighLighting() {
     cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
     cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
     cursor.setCharFormat(fmtNormal);
-
-    //connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::restartTimer);
-    //connect(ui->textEdit, &QTextEdit::textChanged, this, &MainWindow::documentChanges);
 }
 
 void MainWindow::updateOutliner() {

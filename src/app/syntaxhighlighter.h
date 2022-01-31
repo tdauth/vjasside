@@ -10,11 +10,13 @@ class SyntaxHighlighter : public QSyntaxHighlighter
 public:
     SyntaxHighlighter(QTextDocument *parent);
 
-signals:
-    void updatedHighlighting();
+    void setCurrentLine(int currentLine);
 
 protected:
     virtual void highlightBlock(const QString &text) override;
+
+private:
+    int currentLine;
 };
 
 #endif // SYNTAXHIGHLIGHTER_H

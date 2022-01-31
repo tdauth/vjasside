@@ -98,7 +98,7 @@ private:
     bool documentHasChanged = false;
     QString fileDir;
 
-    SyntaxHighlighter *syntaxHighlighter;
+    SyntaxHighlighter *syntaxHighlighter = nullptr;
 
     bool expectAutoComplete = false;
     AutoCompletionPopup *popup;
