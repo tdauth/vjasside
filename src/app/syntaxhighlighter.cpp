@@ -5,7 +5,7 @@
 #include "vjassscanner.h"
 #include "highlightinfo.h"
 
-SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent), currentLine(0) {
+SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent), currentLineStart(0), currentLineEnd(0) {
 }
 
 void SyntaxHighlighter::highlightBlock(const QString &text) {
@@ -19,8 +19,10 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
 
     // the background color depends on whether it is the current line
     QTextCharFormat textCharFormat = highLightInfo.getNormalFormat();
+    const int currentBlockLine = currentBlock().blockNumber();
+    const bool isCurrentLine = currentBlockLine >= currentLineStart && currentBlockLine <= currentLineEnd;
 
-    if (currentLine == currentBlock().blockNumber()) {
+    if (isCurrentLine) {
         textCharFormat.setBackground(QColor(0xfaf5d4));
     } else {
         textCharFormat.setBackground(QColor(0xffffff));
@@ -37,7 +39,7 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
         QTextCharFormat fmt = highLightInfo.getNormalFormat();
         customTextCharFormat.applyToTextCharFormat(fmt, false);
 
-        if (currentLine == currentBlock().blockNumber()) {
+        if (isCurrentLine) {
             fmt.setBackground(QColor(0xfaf5d4));
         } else {
             fmt.setBackground(QColor(0xffffff));
@@ -47,6 +49,10 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
     }
 }
 
-void SyntaxHighlighter::setCurrentLine(int currentLine) {
-    this->currentLine = currentLine;
+void SyntaxHighlighter::setCurrentLineStart(int currentLineStart) {
+    this->currentLineStart = currentLineStart;
+}
+
+void SyntaxHighlighter::setCurrentLineEnd(int currentLineEnd) {
+    this->currentLineEnd = currentLineEnd;
 }

@@ -93,7 +93,9 @@ protected:
 private:
     Ui::MainWindow *ui;
 
-    int currentLine = 0;
+    // selection
+    int currentLineStart = 0;
+    int currentLineEnd = 0;
 
     bool documentHasChanged = false;
     QString fileDir;

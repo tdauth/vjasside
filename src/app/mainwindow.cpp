@@ -568,8 +568,8 @@ void MainWindow::updateWindowStatusBar() {
     const int currentLine = ui->textEdit->textCursor().blockNumber();
     const HighLightInfo::Location location = HighLightInfo::Location(currentLine, currentColumn);
 
-    qDebug() << "Size of AST elements by location" << astElementyByLocation.size();
-    qDebug() << "Location line" << location.line << "and column" << location.column;
+    //qDebug() << "Size of AST elements by location" << astElementyByLocation.size();
+    //qDebug() << "Location line" << location.line << "and column" << location.column;
 
     const QString parserState = timerId != 0 ? tr("Waiting for user stopping") : (syncDocumentState ? tr("Done") : tr("Parsing"));
 
@@ -622,38 +622,50 @@ void MainWindow::updatePJassSyntaxCheckerPJass(bool checked) {
     restartTimer();
 }
 
-void MainWindow::updateCurrentLineHighLighting() {
-    QSignalBlocker signalBlocker(ui->textEdit);
+namespace {
 
-    const int previousLine = currentLine;
-    currentLine = ui->textEdit->textCursor().blockNumber();
-
-    QTextCursor textCursor = ui->textEdit->textCursor();
-    const int originalPosition = textCursor.position();
+inline void setTextBlockBackgroundColor(QTextCursor textCursor, int lineStart, int lineEnd, QColor backgroundColor) {
     QTextBlockFormat textBlockFormat;
 
     textCursor.setPosition(0);
-    textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, previousLine);
-    textCursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
-    textBlockFormat.setBackground(QColor(0xffffff));
+    textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, lineStart);
+    textCursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, lineEnd - lineStart);
+    //textCursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+    textBlockFormat.setBackground(backgroundColor);
     textCursor.setBlockFormat(textBlockFormat);
+}
 
-    textCursor.setPosition(0);
-    textCursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, currentLine);
-    textCursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
-    textBlockFormat.setBackground(QColor(0xfaf5d4));
-    textCursor.setBlockFormat(textBlockFormat);
+inline void rehighlightBlocks(SyntaxHighlighter *syntaxHighlighter, QTextDocument *textDocument, int lineStart, int lineEnd) {
+    for (int i = lineStart; i <= lineEnd; i++) {
+        syntaxHighlighter->rehighlightBlock(textDocument->findBlockByLineNumber(i));
+    }
+}
 
-    const QTextBlock previousTextBlock = syntaxHighlighter->document()->findBlockByLineNumber(previousLine);
-    const QTextBlock currentTextBlock = syntaxHighlighter->document()->findBlockByLineNumber(currentLine);
+}
 
-    //qDebug() << "Update line highlighting with previous line" << previousLine << "and current line" << currentLine;
+void MainWindow::updateCurrentLineHighLighting() {
+    QSignalBlocker signalBlocker(ui->textEdit);
 
-    syntaxHighlighter->setCurrentLine(currentLine);
-    syntaxHighlighter->rehighlightBlock(previousTextBlock);
-    syntaxHighlighter->rehighlightBlock(currentTextBlock);
+    const int previousLineStart = currentLineStart;
+    const int previousLineEnd = currentLineEnd;
+
+    currentLineStart = ui->textEdit->textCursor().hasSelection() ? ui->textEdit->document()->findBlock(ui->textEdit->textCursor().selectionStart()).blockNumber() : ui->textEdit->textCursor().blockNumber();
+    currentLineEnd = ui->textEdit->textCursor().hasSelection() ? ui->textEdit->document()->findBlock(ui->textEdit->textCursor().selectionEnd()).blockNumber() : ui->textEdit->textCursor().blockNumber();
+
+    QTextCursor textCursor = ui->textEdit->textCursor();
+    const int originalPosition = textCursor.position();
+
+    setTextBlockBackgroundColor(textCursor, previousLineStart, previousLineEnd, QColor(0xffffff));
+    setTextBlockBackgroundColor(textCursor, currentLineStart, currentLineEnd, QColor(0xfaf5d4));
+
+    syntaxHighlighter->setCurrentLineStart(currentLineStart);
+    syntaxHighlighter->setCurrentLineEnd(currentLineEnd);
+    rehighlightBlocks(syntaxHighlighter, ui->textEdit->document(), previousLineStart, previousLineEnd);
+    rehighlightBlocks(syntaxHighlighter, ui->textEdit->document(), currentLineStart, currentLineEnd);
 
     textCursor.setPosition(originalPosition);
+
+    qDebug() << "Selection line start" << currentLineStart << "and end" << currentLineEnd;
 }
 
 void MainWindow::clearAllHighLighting() {

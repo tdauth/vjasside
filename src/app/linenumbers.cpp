@@ -45,9 +45,12 @@ void LineNumbers::updateSelectedLines(int lineStart, int lineEnd) {
 
         if (lineNumber >= lineStart && lineNumber <= lineEnd) {
             font.setBold(true);
+            ui->listWidget->item(i)->setBackground(QColor(0xfaf5d4));
+            // TODO Change palette highlighted color as well.
             ui->listWidget->item(i)->setFont(font);
         } else {
             font.setBold(false);
+            ui->listWidget->item(i)->setBackground(QColor(0xffffff));
             ui->listWidget->item(i)->setFont(font);
         }
     }
