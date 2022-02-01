@@ -216,9 +216,9 @@
     </property>
     <addaction name="actionBaradesVJassIDE"/>
    </widget>
-   <widget class="QMenu" name="menuAutomaticAnalysis">
+   <widget class="QMenu" name="menuCode">
     <property name="title">
-     <string>Syntax</string>
+     <string>Code</string>
     </property>
     <addaction name="actionEnableSyntaxHighlighting"/>
     <addaction name="actionEnableSyntaxCheck"/>
@@ -227,6 +227,8 @@
     <addaction name="separator"/>
     <addaction name="actionVJassIDESyntaxChecker"/>
     <addaction name="actionPJassSyntaxChecker"/>
+    <addaction name="separator"/>
+    <addaction name="actionAnalyzeMemoryLeaks"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -251,7 +253,7 @@
     <addaction name="actionpjass"/>
     <addaction name="actionPJassUpdates"/>
    </widget>
-   <widget class="QMenu" name="menuStandard_Scripts">
+   <widget class="QMenu" name="menuStandardScripts">
     <property name="title">
      <string>Scripts</string>
     </property>
@@ -270,8 +272,8 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
-   <addaction name="menuStandard_Scripts"/>
-   <addaction name="menuAutomaticAnalysis"/>
+   <addaction name="menuStandardScripts"/>
+   <addaction name="menuCode"/>
    <addaction name="menuSettings"/>
    <addaction name="menuOnline"/>
    <addaction name="menuAbout"/>
@@ -330,7 +332,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Enable Syntax Highlighting</string>
+    <string>Enable Highlighting</string>
    </property>
   </action>
   <action name="actionEnableSyntaxCheck">
@@ -454,6 +456,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionAnalyzeMemoryLeaks">
+   <property name="text">
+    <string>Analyze Memory Leaks</string>
    </property>
   </action>
  </widget>

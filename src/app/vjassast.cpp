@@ -130,6 +130,26 @@ QString VJassAst::toString() const {
     return result;
 }
 
+QList<VJassAst*> VJassAst::getAllMatching(std::function<bool(VJassAst*)> &&f) {
+    QStack<VJassAst*> stack;
+    stack.push_back(this);
+    QList<VJassAst*> result;
+
+    while (!stack.isEmpty()) {
+        VJassAst *a = stack.pop();
+
+        if (f(a)) {
+            result.push_back(a);
+        }
+
+        for (VJassAst *child : a->getChildren()) {
+            stack.push_back(child);
+        }
+    }
+
+    return result;
+}
+
 void VJassAst::sortByPosition(QList<VJassAst*> &list) {
     std::sort(list.begin(), list.end(), [](VJassAst *e1, VJassAst *e2) {
        const int lineDiff = e2->getLine() - e1->getLine();

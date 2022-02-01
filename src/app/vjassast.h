@@ -1,6 +1,8 @@
 #ifndef VJASSAST_H
 #define VJASSAST_H
 
+#include <functional>
+
 #include <QList>
 #include <QString>
 
@@ -32,6 +34,8 @@ public:
     const QList<QString>& getComments() const;
 
     virtual QString toString() const;
+
+    QList<VJassAst*> getAllMatching(std::function<bool(VJassAst*)> &&f);
 
     static void sortByPosition(QList<VJassAst*> &list);
 

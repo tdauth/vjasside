@@ -9,8 +9,16 @@ void VJassGlobal::setName(const QString &name) {
     this->name = name;
 }
 
+const QString& VJassGlobal::getName() const {
+    return name;
+}
+
 void VJassGlobal::setType(const QString &type) {
     this->type = type;
+}
+
+const QString& VJassGlobal::getType() const {
+    return type;
 }
 
 void VJassGlobal::setIsArray(bool isArray) {

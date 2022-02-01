@@ -15,6 +15,7 @@ SOURCES += \
     finddialog.cpp \
     highlightinfo.cpp \
     linenumbers.cpp \
+    memoryleakanalyzer.cpp \
     pjass.cpp \
     textedit.cpp \
     main.cpp \
@@ -42,6 +43,7 @@ HEADERS += \
     finddialog.h \
     highlightinfo.h \
     linenumbers.h \
+    memoryleakanalyzer.h \
     pjass.h \
     textedit.h \
     mainwindow.h \

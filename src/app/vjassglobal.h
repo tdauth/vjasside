@@ -9,7 +9,9 @@ public:
     VJassGlobal(int line, int column);
 
     void setName(const QString &name);
+    const QString& getName() const;
     void setType(const QString &type);
+    const QString& getType() const;
     void setIsArray(bool isArray);
     void setIsConstant(bool isConstant);
     bool getIsArray() const;

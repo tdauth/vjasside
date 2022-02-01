@@ -1,6 +1,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS = \
+          testmemoryleakanalyzer \
           testpjass \
           testparser \
           testscanner \
@@ -8,6 +9,7 @@ SUBDIRS = \
           testmainwindow
 
 # where to find the sub projects - give the folders
+testmemoryleakanalyzer.subdir = testmemoryleakanalyzer
 testpjass.subdir = testpjass
 testparser.subdir = testparser
 testscanner.subdir = testscanner # relative paths
