@@ -1,22 +1,38 @@
 #ifndef FINDDIALOG_H
 #define FINDDIALOG_H
 
-#include <QWidget>
+#include <QDialog>
+#include <QPlainTextEdit>
 
 namespace Ui {
 class FindDialog;
 }
 
-class FindDialog : public QWidget
+class FindDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit FindDialog(QWidget *parent = nullptr);
+    explicit FindDialog(QPlainTextEdit *plainTextEdit, QWidget *parent = nullptr);
     ~FindDialog();
+
+    bool isCaseSensitive() const;
+    bool isRegularExpression() const;
+
+public slots:
+    void setSearchExpression(const QString &expression);
+
+    bool find(bool next);
+    bool findNext();
+    bool findPrevious();
+
+    int replace(int startPosition, int maxMatches);
+    int replaceNext();
+    int replaceAll();
 
 private:
     Ui::FindDialog *ui;
+    QPlainTextEdit *plainTextEdit;
 };
 
 #endif // FINDDIALOG_H

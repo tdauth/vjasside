@@ -11,7 +11,6 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , findDialog(new FindDialog(this))
     , popup(new AutoCompletionPopup)
     , timerId(0)
     , timerIdCheck(startTimer(500)) // poll every 0.5 seconds for a parser result
@@ -23,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     , parserName("vjasside")
 {
     ui->setupUi(this);
+    findDialog = new FindDialog(ui->textEdit, this);
     findDialog->hide();
     syntaxHighlighter = new SyntaxHighlighter(ui->textEdit->document());
 
@@ -321,6 +321,10 @@ void MainWindow::goToLine() {
 }
 
 void MainWindow::findAndReplace() {
+    if (ui->textEdit->textCursor().hasSelection()) {
+        findDialog->setSearchExpression(ui->textEdit->textCursor().selectedText());
+    }
+
     findDialog->show();
     findDialog->activateWindow();
     findDialog->raise();
