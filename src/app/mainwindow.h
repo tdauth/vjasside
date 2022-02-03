@@ -80,6 +80,8 @@ private slots:
     void updatePJassSyntaxCheckerVJassIDE(bool checked);
     void updatePJassSyntaxCheckerPJass(bool checked);
 
+    void setAnalyzeMemoryLeaks(bool checked);
+
     void updateCurrentLineHighLighting();
 
     void clearAllHighLighting();
@@ -123,7 +125,7 @@ private:
         QString pjassStandardOutput;
         QString pjassErrorOutput;
 
-        ScanAndParseResults(const QString &text, QList<VJassToken> &&tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput) : highLightInfo(text, tokens, ast, pjassStandardOutput, pjassErrorOutput, false, false) /* initialize after moving tokens */, tokens(std::move(tokens)), ast(ast) {
+        ScanAndParseResults(const QString &text, QList<VJassToken> &&tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput, bool analyzeMemoryLeaks) : highLightInfo(text, tokens, ast, pjassStandardOutput, pjassErrorOutput, false, false, analyzeMemoryLeaks) /* initialize after moving tokens */, tokens(std::move(tokens)), ast(ast) {
         }
 
         virtual ~ScanAndParseResults() {
@@ -142,13 +144,10 @@ private:
     QThread *scanAndParseThread;
     QAtomicInt stopScanAndParseThread;
     QAtomicInt syntaxChecker; // 0 - vjasside, 1 - pjass
+    QAtomicInt analyzeMemoryLeaks; // 0 - on, 1 - off
     QString parserName;
     bool syncDocumentState = true;
 
-    // for the outliner
-    QList<VJassAst*> astElements;
-
-    // for refactoring
-    QMap<HighLightInfo::Location, VJassAst*> astElementyByLocation;
+    ScanAndParseResults *currentResults = nullptr;
 };
 #endif // MAINWINDOW_H

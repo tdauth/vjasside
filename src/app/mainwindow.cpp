@@ -7,6 +7,7 @@
 #include "vjassscanner.h"
 #include "highlightinfo.h"
 #include "pjass.h"
+#include "memoryleakanalyzer.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -57,6 +58,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionVJassIDESyntaxChecker, &QAction::triggered, this, &MainWindow::updatePJassSyntaxCheckerVJassIDE);
     connect(ui->actionPJassSyntaxChecker, &QAction::triggered, this, &MainWindow::updatePJassSyntaxCheckerPJass);
+
+    connect(ui->actionAnalyzeMemoryLeaks, &QAction::triggered, this, &MainWindow::setAnalyzeMemoryLeaks);
 
     connect(ui->actionJASS_Manual, &QAction::triggered, this, &MainWindow::openJASSManual);
     connect(ui->actionCodeOnHive, &QAction::triggered, this, &MainWindow::openCodeOnHive);
@@ -152,7 +155,7 @@ MainWindow::MainWindow(QWidget *parent)
                             }
 
                             // this stores also the required highlighting information
-                            ScanAndParseResults *results = new ScanAndParseResults(input, std::move(tokens), ast, pjassStandardOutput, pjassErrorOutput);
+                            ScanAndParseResults *results = new ScanAndParseResults(input, std::move(tokens), ast, pjassStandardOutput, pjassErrorOutput, this->analyzeMemoryLeaks.loadAcquire() == 1);
 
                             if (this->scanAndParsePaused.loadAcquire() == 0) {
                                 // by the end there could be new input and we have to start again
@@ -200,9 +203,9 @@ MainWindow::~MainWindow()
     delete scanAndParseThread;
     scanAndParseThread = nullptr;
 
-    for (VJassAst *a : astElements) {
-        delete a;
-        a = nullptr;
+    if (currentResults != nullptr) {
+        delete currentResults;
+        currentResults = nullptr;
     }
 }
 
@@ -601,8 +604,8 @@ void MainWindow::updateWindowStatusBar() {
 
     const QString parserState = timerId != 0 ? tr("Waiting for user stopping") : (syncDocumentState ? tr("Done") : tr("Parsing"));
 
-    if (astElementyByLocation.contains(location)) {
-        VJassAst *ast = astElementyByLocation[location];
+    if (currentResults != nullptr && currentResults->highLightInfo.getAstElementsByLocation().contains(location)) {
+        VJassAst *ast = currentResults->highLightInfo.getAstElementsByLocation()[location];
 
         statusBar()->showMessage(tr("Column: %1, Line: %2      ParserState: %3      %4      %5").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName).arg(ast->toString()));
     } else {
@@ -648,6 +651,13 @@ void MainWindow::updatePJassSyntaxCheckerPJass(bool checked) {
 
     // this will update the syntax check
     restartTimer();
+}
+
+void MainWindow::setAnalyzeMemoryLeaks(bool checked) {
+    analyzeMemoryLeaks.storeRelease(checked);
+
+    QSignalBlocker signalBlocker(ui->actionAnalyzeMemoryLeaks);
+    ui->actionAnalyzeMemoryLeaks->setChecked(checked);
 }
 
 namespace {
@@ -710,18 +720,20 @@ void MainWindow::clearAllHighLighting() {
 void MainWindow::updateOutliner() {
     ui->outlinerListWidget->clear();
 
-    for (const VJassAst *astElement : astElements) {
-        const QString text = astElement->toString();
+    if (currentResults != nullptr) {
+        for (const VJassAst *astElement : currentResults->highLightInfo.getAstElements()) {
+            const QString text = astElement->toString();
 
-        if ((text.startsWith(VJassToken::KEYWORD_NATIVE) && ui->checkBoxNatives->isChecked())
-            || (text.startsWith(VJassToken::KEYWORD_FUNCTION) && ui->checkBoxFunctions->isChecked())
-            || (text.startsWith(VJassToken::KEYWORD_CONSTANT) && ui->checkBoxConstants->isChecked())
-            || (text.startsWith(VJassToken::KEYWORD_TYPE) && ui->checkBoxTypes->isChecked())
-            || (!text.startsWith(VJassToken::KEYWORD_NATIVE) && !text.startsWith(VJassToken::KEYWORD_FUNCTION) && !text.startsWith(VJassToken::KEYWORD_CONSTANT) && !text.startsWith(VJassToken::KEYWORD_TYPE) && ui->checkBoxGlobals->isChecked())
-        ) {
-            QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
-            item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
-            ui->outlinerListWidget->addItem(item);
+            if ((text.startsWith(VJassToken::KEYWORD_NATIVE) && ui->checkBoxNatives->isChecked())
+                || (text.startsWith(VJassToken::KEYWORD_FUNCTION) && ui->checkBoxFunctions->isChecked())
+                || (text.startsWith(VJassToken::KEYWORD_CONSTANT) && ui->checkBoxConstants->isChecked())
+                || (text.startsWith(VJassToken::KEYWORD_TYPE) && ui->checkBoxTypes->isChecked())
+                || (!text.startsWith(VJassToken::KEYWORD_NATIVE) && !text.startsWith(VJassToken::KEYWORD_FUNCTION) && !text.startsWith(VJassToken::KEYWORD_CONSTANT) && !text.startsWith(VJassToken::KEYWORD_TYPE) && ui->checkBoxGlobals->isChecked())
+            ) {
+                QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
+                item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
+                ui->outlinerListWidget->addItem(item);
+            }
         }
     }
 
@@ -729,7 +741,7 @@ void MainWindow::updateOutliner() {
         ui->outlinerListWidget->addItem(tr("No matching elements."));
         ui->tabWidget->setTabText(1, tr("0 Elements"));
     } else {
-        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", astElements.length()));
+        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", currentResults->highLightInfo.getAstElements().length()));
     }
 }
 
@@ -756,6 +768,13 @@ void MainWindow::timerEvent(QTimerEvent *event) {
 
         // if there are results we will highlight everything now
         if (scanAndParseResults != nullptr) {
+
+            if (currentResults != nullptr) {
+                delete currentResults;
+                currentResults = nullptr;
+            }
+
+            currentResults = scanAndParseResults;
             syncDocumentState = true;
             updateWindowStatusBar();
 
@@ -769,14 +788,14 @@ void MainWindow::timerEvent(QTimerEvent *event) {
             if (checkSyntax || autoComplete || highlight) {
                 if (highlight) {
                     qDebug() << "Highlight!";
-                    highlightTokensAndAst(scanAndParseResults->highLightInfo, checkSyntax);
+                    highlightTokensAndAst(currentResults->highLightInfo, checkSyntax);
                 }
 
                 if (checkSyntax || autoComplete) {
                     // update syntax errors output widget
                     ui->outputListWidget->clear();
 
-                    const QList<VJassParseError> &parseErrors = scanAndParseResults->highLightInfo.getParseErrors();
+                    const QList<VJassParseError> &parseErrors = currentResults->highLightInfo.getParseErrors();
 
                     for (const VJassParseError &parseError : parseErrors) {
                         QListWidgetItem *item = new QListWidgetItem(tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError()));
@@ -791,30 +810,15 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                         ui->tabWidget->setTabText(0, tr("%n Syntax Errors", "%n Syntax Error", parseErrors.length()));
                     }
 
-                    VJassAst *ast = scanAndParseResults->ast;
-                    scanAndParseResults->ast = nullptr; // prevents deletion
-
                     // update outliner
-                    ui->outlinerListWidget->clear();
-
-                    for (VJassAst *a : astElements) {
-                        delete a;
-                        a = nullptr;
-                    }
-
-                    astElements.clear();
-                    astElementyByLocation.clear();
-                    astElements = scanAndParseResults->highLightInfo.getAstElements();
-                    astElementyByLocation = scanAndParseResults->highLightInfo.getAstElementsByLocation();
-
                     updateOutliner();
 
-                    if (autoComplete && ast->getCodeCompletionSuggestions().size() > 0) {
+                    if (autoComplete && currentResults->ast->getCodeCompletionSuggestions().size() > 0) {
                         popup->clear();
                         popup->setFocusProxy(this);
                         QTreeWidgetItem *firstItem = nullptr;
 
-                        for (VJassAst *codeCompletionSuggestion : scanAndParseResults->ast->getCodeCompletionSuggestions()) {
+                        for (VJassAst *codeCompletionSuggestion : currentResults->ast->getCodeCompletionSuggestions()) {
                             QTreeWidgetItem *item = new QTreeWidgetItem(popup, QStringList(codeCompletionSuggestion->toString()));
 
                             if (firstItem == nullptr) {
@@ -833,9 +837,6 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                     }
                 }
             }
-
-            delete scanAndParseResults;
-            scanAndParseResults = nullptr;
         }
     }
 }

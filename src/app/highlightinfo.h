@@ -21,7 +21,7 @@
 class HighLightInfo
 {
 public:
-    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput = QString(), const QString &pjassErrorOutput = QString(), bool fillCustomTextCharFormat = true, bool createTextDocument = false);
+    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput = QString(), const QString &pjassErrorOutput = QString(), bool fillCustomTextCharFormat = true, bool createTextDocument = false, bool analyzeMemoryLeaks = false);
 
     struct Location {
         int line;
@@ -83,6 +83,7 @@ public:
     const QList<VJassParseError>& getParseErrors() const;
     const QList<VJassAst*>& getAstElements() const;
     const QMap<Location, VJassAst*>& getAstElementsByLocation() const;
+    const QList<VJassAst*>& getAstLeakingElements() const;
 
     static QFont getNormalFont();
     static void applyNormalFormat(QTextCharFormat &textCharFormat);
@@ -97,6 +98,7 @@ private:
     QList<VJassParseError> parseErrors;
     QList<VJassAst*> astElements;
     QMap<Location, VJassAst*> astElementsByLocation;
+    QList<VJassAst*> astLeakingElements;
 };
 
 inline bool operator<(const HighLightInfo::Location &e1, const HighLightInfo::Location &e2) {

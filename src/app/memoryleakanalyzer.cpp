@@ -9,11 +9,15 @@ MemoryLeakAnalyzer::MemoryLeakAnalyzer(VJassAst *ast)
         return typeid(*ast) == typeid(VJassGlobal) && dynamic_cast<VJassGlobal*>(ast)->getType() == "location";
     });
 
+    qDebug() << "Location globals size" << locationGlobals.size();
+
     QList<VJassAst*> removeLocationCalls = ast->getAllMatching([](VJassAst *ast) {
         return typeid(*ast) == typeid(VJassExpression)
             && dynamic_cast<VJassExpression*>(ast)->getType() == VJassExpression::FunctionCall
             && dynamic_cast<VJassExpression*>(ast)->getValue() == "RemoveLocation";
     });
+
+    qDebug() << "Remove location calls" << removeLocationCalls.size();
 
     for (VJassAst *l : locationGlobals) {
         VJassGlobal *locationGlobal = dynamic_cast<VJassGlobal*>(l);

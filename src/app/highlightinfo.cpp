@@ -5,9 +5,10 @@
 #include "vjassglobal.h"
 #include "vjasstype.h"
 #include "pjass.h"
+#include "memoryleakanalyzer.h"
 #include "highlightinfo.h"
 
-HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput, bool fillCustomTextCharFormat, bool createTextDocument) : textDocument(nullptr)
+HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput, bool fillCustomTextCharFormat, bool createTextDocument, bool analyzeMemoryLeaks) : textDocument(nullptr)
 {
     //qDebug() << "Getting tokens" << tokens.size();
 
@@ -162,6 +163,13 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
 
         // TODO segmentation fault
         //VJassAst::sortByPosition(astElements);
+
+        if (analyzeMemoryLeaks) {
+            MemoryLeakAnalyzer memoryLeakAnalyzer(ast);
+            for (VJassGlobal *global : memoryLeakAnalyzer.getGlobals()) {
+                astLeakingElements.append(global);
+            }
+        }
     }
 
     if (createTextDocument) {
@@ -285,6 +293,10 @@ const QList<VJassAst*>& HighLightInfo::getAstElements() const {
 
 const QMap<HighLightInfo::Location, VJassAst*>& HighLightInfo::getAstElementsByLocation() const {
     return astElementsByLocation;
+}
+
+const QList<VJassAst*>& HighLightInfo::getAstLeakingElements() const {
+    return astLeakingElements;
 }
 
 HighLightInfo::CustomTextCharFormat& HighLightInfo::getCustomTextCharFormat(int line, int column) {

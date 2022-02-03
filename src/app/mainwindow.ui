@@ -76,7 +76,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>2</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -186,6 +186,16 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="tabMemoryLeaks">
+        <attribute name="title">
+         <string>0 Memory Leaks</string>
+        </attribute>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QListWidget" name="memoryLeaksListWidget"/>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </widget>
     </item>
@@ -197,7 +207,7 @@
      <x>0</x>
      <y>0</y>
      <width>612</width>
-     <height>17</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -459,6 +469,9 @@
    </property>
   </action>
   <action name="actionAnalyzeMemoryLeaks">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Analyze Memory Leaks</string>
    </property>

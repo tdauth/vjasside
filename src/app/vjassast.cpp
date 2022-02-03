@@ -121,7 +121,7 @@ const QList<QString>& VJassAst::getComments() const {
 }
 
 QString VJassAst::toString() const {
-    QString result = "";
+    QString result = "AST element with children:\n";
 
     for (VJassAst *child : getChildren()) {
         result += child->toString();
@@ -140,12 +140,16 @@ QList<VJassAst*> VJassAst::getAllMatching(std::function<bool(VJassAst*)> &&f) {
 
         if (f(a)) {
             result.push_back(a);
-        }
+        }/* else {
+            qDebug() << "Not adding" << a->toString();
+        }*/
 
         for (VJassAst *child : a->getChildren()) {
             stack.push_back(child);
         }
     }
+
+    //qDebug() << "All in getAllMatching" << result.size();
 
     return result;
 }
