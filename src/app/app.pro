@@ -48,6 +48,7 @@ HEADERS += \
     textedit.h \
     mainwindow.h \
     syntaxhighlighter.h \
+    version.h \
     vjassast.h \
     vjassexpression.h \
     vjassfunction.h \

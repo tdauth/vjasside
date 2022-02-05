@@ -6,6 +6,8 @@
 TextEdit::TextEdit(QWidget *parent) : QPlainTextEdit(parent), pressedControl(false) {
     setLineWrapMode(QPlainTextEdit::NoWrap);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // remove the space above the first line
+    document()->setDocumentMargin(0.0);
 }
 
 TextEdit::~TextEdit() {

@@ -307,7 +307,7 @@
   </action>
   <action name="actionComplete">
    <property name="text">
-    <string>Complete</string>
+    <string>Auto Complete</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Space</string>
@@ -444,7 +444,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>vjasside</string>
+    <string>vjasside Syntax Checker</string>
    </property>
   </action>
   <action name="actionPJassSyntaxChecker">
@@ -452,7 +452,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>pjass</string>
+    <string>pjass Syntax Checker</string>
    </property>
   </action>
   <action name="actionApplyColor">

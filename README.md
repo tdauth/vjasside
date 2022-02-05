@@ -59,6 +59,12 @@ These are some possible upcoming features for this IDE:
 * Optimization: Optimizing the map script.
 * Obfuscationg: Obfuscating your code with not readable symbols.
 
+## Deployment on Windows
+
+Adapt the script [deploywindows.bat](deploywindows.bat) to your Windows Qt installation, release directory and your target deployment directory.
+Create a release build and run the script.
+It copies the vjasside executable and all required DLLs for Windows into the target folder.
+
 ## JASS and vJass
 
 * [JASS Manual](http://jass.sourceforge.net/doc/)

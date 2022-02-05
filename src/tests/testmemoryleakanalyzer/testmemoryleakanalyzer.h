@@ -8,7 +8,8 @@ class TestMemoryLeakAnalyzer : public QObject
     Q_OBJECT
 
     private slots:
-        void canDetectGlobalsLeaks();
+        void canDetectLeaks();
+        void canDetectNoLeaks();
 };
 
 #endif // TESTMEMORYLEAKANALYZER_H

@@ -54,6 +54,27 @@ QString VJassExpression::toString() const {
             return VJassToken::KEYWORD_FALSE;
         }
 
+        case VJassExpression::Not: {
+            result = VJassToken::KEYWORD_NOT;
+
+            if (!getChildren().isEmpty()) {
+                result += " ";
+                int i = 0;
+
+                for (VJassAst *child : getChildren()) {
+                    result += child->toString();
+
+                    if (i < getChildren().size() - 1) {
+                        result += ", ";
+                    }
+
+                    i++;
+                }
+            }
+
+            break;
+        }
+
         case VJassExpression::FunctionCall: {
             result = getValue();
 
@@ -74,6 +95,7 @@ QString VJassExpression::toString() const {
             break;
         }
 
+        case VJassExpression::Identifier:
         case VJassExpression::StringLiteral:
         case VJassExpression::RawCodeLiteral:
         case VJassExpression::IntegerLiteral:
@@ -85,6 +107,28 @@ QString VJassExpression::toString() const {
 
         default: {
             result = "expression ";
+
+            switch (getType()) {
+                case VJassExpression::And: {
+                    result += "and";
+
+                    break;
+                }
+
+                case VJassExpression::Or: {
+                    result += "or";
+
+                    break;
+                }
+
+                case VJassExpression::Division: {
+                    result += "/";
+
+                    break;
+                }
+            }
+
+            result += " with children";
 
             if (!getChildren().isEmpty()) {
                 result += "(";

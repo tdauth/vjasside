@@ -4,11 +4,14 @@
 #include "vjassglobals.h"
 #include "memoryleakanalyzer.h"
 
-void TestMemoryLeakAnalyzer::canDetectGlobalsLeaks() {
-    QString input = QString("globals\n")
-            + "\tlocation bla = Location(0.0, 0.0)\n"
-            + "endglobals\n"
-            ;
+void TestMemoryLeakAnalyzer::canDetectLeaks() {
+    QFile f("wc3reforged/leaking.j");
+
+    QVERIFY(f.open(QFile::ReadOnly | QFile::Text));
+
+    QTextStream in(&f);
+    QString input = in.readAll();
+
     VJassScanner scanner;
     QList<VJassToken> tokens = scanner.scan(input, true);
     VJassParser parser;
@@ -21,16 +24,21 @@ void TestMemoryLeakAnalyzer::canDetectGlobalsLeaks() {
         qDebug() << "Error:" << error.getError();
     }
 
-    QCOMPARE(ast->getChildren().size(), 1);
-    QCOMPARE(typeid(*ast->getChildren().at(0)), typeid(VJassGlobals));
-    QCOMPARE(ast->getChildren().at(0)->getChildren().size(), 1);
-    QCOMPARE(typeid(*ast->getChildren().at(0)->getChildren().at(0)), typeid(VJassGlobal));
     QCOMPARE(ast->getAllParseErrors().size(), 0);
 
     MemoryLeakAnalyzer memoryLeakAnalyzer(ast);
 
     QCOMPARE(memoryLeakAnalyzer.getGlobals().size(), 1);
     QCOMPARE(memoryLeakAnalyzer.getGlobals().at(0)->getName(), "bla");
+}
+
+void TestMemoryLeakAnalyzer::canDetectNoLeaks() {
+    QFile f("wc3reforged/notleaking.j");
+
+    QVERIFY(f.open(QFile::ReadOnly | QFile::Text));
+
+    QTextStream in(&f);
+    QString input = in.readAll();
 }
 
 QTEST_MAIN(TestMemoryLeakAnalyzer)

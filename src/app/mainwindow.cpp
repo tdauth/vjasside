@@ -8,6 +8,7 @@
 #include "highlightinfo.h"
 #include "pjass.h"
 #include "memoryleakanalyzer.h"
+#include "version.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -82,7 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(popup, &QTreeWidget::clicked, this, &MainWindow::clickPopupItem);
 
-    connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outputListItemDoubleClicked);
+    connect(ui->outputListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::astListItemDoubleClicked);
 
     // outliner
 
@@ -99,7 +100,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->checkBoxGlobals, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
     connect(ui->checkBoxFunctions, &QCheckBox::clicked, this, &MainWindow::updateOutliner);
 
-    connect(ui->outlinerListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::outlinerListItemDoubleClicked);
+    connect(ui->outlinerListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::astListItemDoubleClicked);
+    connect(ui->memoryLeaksListWidget, &QListWidget::itemDoubleClicked, this, &MainWindow::astListItemDoubleClicked);
 
     // basic settings for text
     ui->textEdit->setFont(HighLightInfo::getNormalFont());
@@ -464,23 +466,7 @@ void MainWindow::highlightTokensAndAst(const HighLightInfo & /* highLightInfo */
     //ui->textEdit->setExtraSelections(extraSelections);
 }
 
-void MainWindow::outputListItemDoubleClicked(QListWidgetItem *item) {
-    if (item->data(Qt::UserRole).isValid() && item->data(Qt::UserRole).canConvert<QPoint>()) {
-        int line = item->data(Qt::UserRole).toPoint().x();
-        int column = item->data(Qt::UserRole).toPoint().y();
-
-        QTextCursor cursor(ui->textEdit->document());
-        cursor.movePosition(QTextCursor::Start, QTextCursor::MoveAnchor);
-        cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, line);
-        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, column);
-        ui->textEdit->setTextCursor(cursor);
-        ui->textEdit->setFocus();
-
-        qDebug() << "Moving cursor to line" << line << "and column" << column;
-    }
-}
-
-void MainWindow::outlinerListItemDoubleClicked(QListWidgetItem *item) {
+void MainWindow::astListItemDoubleClicked(QListWidgetItem *item) {
     if (item->data(Qt::UserRole).isValid() && item->data(Qt::UserRole).canConvert<QPoint>()) {
         int line = item->data(Qt::UserRole).toPoint().x();
         int column = item->data(Qt::UserRole).toPoint().y();
@@ -599,7 +585,7 @@ void MainWindow::openPJassUpdates() {
 }
 
 void MainWindow::aboutDialog() {
-    QMessageBox::about(this, tr("Baradé's vJass IDE"), tr("Integrated development environment for the scripting languages JASS and vJass from the computer game Warcraft III. This is an Open Source application based on the Qt framework. Visit <a href=\"https://github.com/tdauth/vjasside\">the GitHub repository</a> to contribute or star it."));
+    QMessageBox::about(this, tr("Baradé's vJass IDE %1").arg(VJASSIDE_VERSION), tr("Integrated development environment for the scripting languages JASS and vJass from the computer game Warcraft III. This is an Open Source application based on the Qt framework. Visit <a href=\"https://github.com/tdauth/vjasside\">the GitHub repository</a> to contribute or star it."));
 }
 
 void MainWindow::restartTimer() {
@@ -714,6 +700,9 @@ void MainWindow::setAnalyzeMemoryLeaks(bool checked) {
 
     QSignalBlocker signalBlocker(ui->actionAnalyzeMemoryLeaks);
     ui->actionAnalyzeMemoryLeaks->setChecked(checked);
+
+    // this will update the memory analysis
+    restartTimer();
 }
 
 namespace {
@@ -801,6 +790,27 @@ void MainWindow::updateOutliner() {
     }
 }
 
+void MainWindow::updateMemoryLeaks() {
+    ui->memoryLeaksListWidget->clear();
+
+    if (currentResults != nullptr) {
+        for (const VJassAst *astElement : currentResults->highLightInfo.getAstLeakingElements()) {
+            const QString text = astElement->toString();
+
+            QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
+            item->setData(Qt::UserRole, QPoint(astElement->getLine(), astElement->getColumn()));
+            ui->memoryLeaksListWidget->addItem(item);
+        }
+    }
+
+    if (ui->memoryLeaksListWidget->count() == 0) {
+        ui->memoryLeaksListWidget->addItem(tr("No memory leaks."));
+        ui->tabWidget->setTabText(2, tr("0 Memory Leaks"));
+    } else {
+        ui->tabWidget->setTabText(2, tr("%n Memory Leaks", "%n Memory Leaks", currentResults->highLightInfo.getAstLeakingElements().length()));
+    }
+}
+
 void MainWindow::timerEvent(QTimerEvent *event) {
     // the user input timer finishes, so the user has stopped writing for some time, let's send the finished text to the thread for handling.
     if (event->timerId() == timerId) {
@@ -868,6 +878,9 @@ void MainWindow::timerEvent(QTimerEvent *event) {
 
                     // update outliner
                     updateOutliner();
+
+                    // update memory leaks
+                    updateMemoryLeaks();
 
                     if (autoComplete && currentResults->ast->getCodeCompletionSuggestions().size() > 0) {
                         popup->clear();

@@ -10,6 +10,8 @@
 class MemoryLeakAnalyzer
 {
 public:
+    static const QMap<QString, QString> LEAKING_TYPES;
+
     MemoryLeakAnalyzer(VJassAst *ast);
 
     const QList<VJassGlobal*>& getGlobals() const;

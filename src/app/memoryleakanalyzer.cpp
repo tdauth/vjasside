@@ -3,34 +3,37 @@
 #include "vjassglobal.h"
 #include "vjassexpression.h"
 
+const QMap<QString, QString> MemoryLeakAnalyzer::LEAKING_TYPES = {
+    { "location", "RemoveLocation" },
+    { "rect", "RemoveRect" },
+    { "unit", "RemoveUnit" }
+};
+
 MemoryLeakAnalyzer::MemoryLeakAnalyzer(VJassAst *ast)
 {
-    QList<VJassAst*> locationGlobals = ast->getAllMatching([](VJassAst *ast) {
-        return typeid(*ast) == typeid(VJassGlobal) && dynamic_cast<VJassGlobal*>(ast)->getType() == "location";
+    QList<VJassAst*> globals = ast->getAllMatching([](VJassAst *ast) {
+        return typeid(*ast) == typeid(VJassGlobal) && LEAKING_TYPES.contains(dynamic_cast<VJassGlobal*>(ast)->getType());
     });
 
-    qDebug() << "Location globals size" << locationGlobals.size();
-
-    QList<VJassAst*> removeLocationCalls = ast->getAllMatching([](VJassAst *ast) {
+    QList<VJassAst*> calls = ast->getAllMatching([](VJassAst *ast) {
         return typeid(*ast) == typeid(VJassExpression)
             && dynamic_cast<VJassExpression*>(ast)->getType() == VJassExpression::FunctionCall
-            && dynamic_cast<VJassExpression*>(ast)->getValue() == "RemoveLocation";
+            && LEAKING_TYPES.values().contains(dynamic_cast<VJassExpression*>(ast)->getValue());
     });
 
-    qDebug() << "Remove location calls" << removeLocationCalls.size();
 
-    for (VJassAst *l : locationGlobals) {
-        VJassGlobal *locationGlobal = dynamic_cast<VJassGlobal*>(l);
+    for (VJassAst *g : globals) {
+        VJassGlobal *global = dynamic_cast<VJassGlobal*>(g);
 
-        QList<VJassAst*>::iterator iterator = std::find_if(removeLocationCalls.begin(), removeLocationCalls.end(), [locationGlobal](VJassAst *a) {
+        QList<VJassAst*>::iterator iterator = std::find_if(calls.begin(), calls.end(), [global](VJassAst *a) {
             return a->getChildren().size() > 0
                 && a->getChildren().at(0) != nullptr
                 && typeid(VJassExpression) == typeid(*a->getChildren().at(0))
-                && dynamic_cast<VJassExpression*>(a->getChildren().at(0))->getValue() == locationGlobal->getName();
+                && dynamic_cast<VJassExpression*>(a->getChildren().at(0))->getValue() == global->getName();
         });
 
-        if (iterator == removeLocationCalls.end()) {
-            globals.push_back(locationGlobal);
+        if (iterator == calls.end()) {
+            globals.push_back(global);
         }
     }
 }

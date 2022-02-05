@@ -77,8 +77,7 @@ private slots:
 
     void updateCursorPosition(int position);
     void highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax);
-    void outputListItemDoubleClicked(QListWidgetItem *item);
-    void outlinerListItemDoubleClicked(QListWidgetItem *item);
+    void astListItemDoubleClicked(QListWidgetItem *item);
 
     void updatePJassSyntaxCheckerVJassIDE(bool checked);
     void updatePJassSyntaxCheckerPJass(bool checked);
@@ -90,6 +89,7 @@ private slots:
     void clearAllHighLighting();
 
     void updateOutliner();
+    void updateMemoryLeaks();
 
     friend class TestMainWindow;
     friend class SyntaxHighLighter;

@@ -14,6 +14,7 @@ class TestParser : public QObject
         void canParseNestedExpression();
         void canParseSetStatement();
         void canParseIfStatement();
+        void canParseCallStatement();
 };
 
 #endif // TESTPARSER_H

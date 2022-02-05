@@ -201,4 +201,25 @@ void TestParser::canParseIfStatement() {
     ast = nullptr;
 }
 
+void TestParser::canParseCallStatement() {
+    const QString input =
+            QString("function bla takes nothing returns nothing\n")
+            + "call Bla(identifier)\n"
+            + "endfunction";
+
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens;
+    tokens = scanner.scan(input, false);
+    VJassParser parser;
+    VJassAst *ast = parser.parse(tokens);
+
+    QVERIFY(ast != nullptr);
+    QCOMPARE(ast->getChildren().size(), 1);
+    QCOMPARE(ast->getParseErrors().size(), 0);
+
+    delete ast;
+    ast = nullptr;
+}
+
 QTEST_MAIN(TestParser)
