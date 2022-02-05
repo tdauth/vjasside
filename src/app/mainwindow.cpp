@@ -743,6 +743,26 @@ void MainWindow::updateCurrentLineHighLighting() {
 
     syntaxHighlighter->setCurrentLineStart(currentLineStart);
     syntaxHighlighter->setCurrentLineEnd(currentLineEnd);
+
+    const QChar characterAfterCursor = ui->textEdit->document()->characterAt(originalPosition);
+    int bracketsColumnNumber = -1;
+
+    if (characterAfterCursor == '(' || characterAfterCursor == '[' || characterAfterCursor == ']' || characterAfterCursor == ')') {
+        bracketsColumnNumber = ui->textEdit->textCursor().columnNumber();
+    } else if (ui->textEdit->textCursor().columnNumber() > 0) {
+        const QChar characterBeforeCursor = ui->textEdit->document()->characterAt(originalPosition - 1);
+
+        if (characterBeforeCursor == '(' || characterBeforeCursor == '[' || characterBeforeCursor == ']' || characterBeforeCursor == ')') {
+            bracketsColumnNumber = ui->textEdit->textCursor().columnNumber() - 1;
+        }
+    }
+
+    if (bracketsColumnNumber != -1) {
+        syntaxHighlighter->setHighlightBracketPosition(ui->textEdit->textCursor().blockNumber(), bracketsColumnNumber);
+    } else {
+        syntaxHighlighter->setHighlightBracketPosition(-1, -1);
+    }
+
     rehighlightBlocks(syntaxHighlighter, ui->textEdit->document(), previousLineStart, previousLineEnd);
     rehighlightBlocks(syntaxHighlighter, ui->textEdit->document(), currentLineStart, currentLineEnd);
 

@@ -5,7 +5,7 @@
 #include "vjassscanner.h"
 #include "highlightinfo.h"
 
-SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent), currentLineStart(0), currentLineEnd(0) {
+SyntaxHighlighter::SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent), currentLineStart(0), currentLineEnd(0), highlightBracketLine(-1), highlightBracketColumn(-1) {
 }
 
 void SyntaxHighlighter::highlightBlock(const QString &text) {
@@ -47,6 +47,60 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
 
         setFormat(location.column, customTextCharFormat.length, fmt);
     }
+
+    if (highlightBracketLine != -1 && highlightBracketColumn != -1 && currentBlock().blockNumber() == highlightBracketLine) {
+        QTextCharFormat fmt = format(highlightBracketColumn);
+        fmt.setBackground(Qt::green);
+        setFormat(highlightBracketColumn, 1, fmt);
+
+        const QString highlightedBracket = text.mid(highlightBracketColumn, 1);
+
+        //qDebug() << "Highlighted bracket" << highlightedBracket;
+
+        if (highlightedBracket == "(" || highlightedBracket == "[") {
+            const QString openingBracket = highlightedBracket;
+            const QString closingBracket = openingBracket == "(" ? ")" : "]";
+            int foundOpeningBrackets = 1;
+            int foundClosingBrackets = 0;
+
+            for (int i = highlightBracketColumn; i < text.length(); i++) {
+                if (text.mid(i, 1) == openingBracket) {
+                    foundOpeningBrackets++;
+                } else if (text.mid(i, 1) == closingBracket) {
+                    foundClosingBrackets++;
+
+                    if (foundClosingBrackets == foundOpeningBrackets) {
+                        QTextCharFormat fmt = format(i);
+                        fmt.setBackground(Qt::green);
+                        setFormat(i, 1, fmt);
+
+                        break;
+                    }
+                }
+            }
+        } else if (highlightedBracket == ")" || highlightedBracket == "]") {
+            const QString openingBracket = openingBracket == ")" ? "(" : "[";
+            const QString closingBracket = highlightedBracket;
+            int foundOpeningBrackets = 0;
+            int foundClosingBrackets = 1;
+
+            for (int i = highlightBracketColumn; i >= 0; i--) {
+                if (text.mid(i, 1) == closingBracket) {
+                    foundClosingBrackets++;
+                } else if (text.mid(i, 1) == openingBracket) {
+                    foundOpeningBrackets++;
+
+                    if (foundClosingBrackets == foundOpeningBrackets) {
+                        QTextCharFormat fmt = format(i);
+                        fmt.setBackground(Qt::green);
+                        setFormat(i, 1, fmt);
+
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 void SyntaxHighlighter::setCurrentLineStart(int currentLineStart) {
@@ -55,4 +109,9 @@ void SyntaxHighlighter::setCurrentLineStart(int currentLineStart) {
 
 void SyntaxHighlighter::setCurrentLineEnd(int currentLineEnd) {
     this->currentLineEnd = currentLineEnd;
+}
+
+void SyntaxHighlighter::setHighlightBracketPosition(int highlightBracketLine, int highlightBracketColumn) {
+    this->highlightBracketLine = highlightBracketLine;
+    this->highlightBracketColumn = highlightBracketColumn;
 }

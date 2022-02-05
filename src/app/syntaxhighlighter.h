@@ -12,6 +12,7 @@ public:
 
     void setCurrentLineStart(int currentLineStart);
     void setCurrentLineEnd(int currentLineEnd);
+    void setHighlightBracketPosition(int line, int column);
 
 protected:
     virtual void highlightBlock(const QString &text) override;
@@ -19,6 +20,8 @@ protected:
 private:
     int currentLineStart;
     int currentLineEnd;
+    int highlightBracketLine;
+    int highlightBracketColumn;
 };
 
 #endif // SYNTAXHIGHLIGHTER_H
