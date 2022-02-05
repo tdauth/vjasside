@@ -37,12 +37,14 @@ public:
     };
 
     void setValue(const QString &value);
-    QString getValue() const;
+    const QString& getValue() const;
 
     void setType(Type type);
     Type getType() const;
 
     // TODO Function parameters would be the children
+
+    virtual QString toString() const override;
 
 private:
     QString value;

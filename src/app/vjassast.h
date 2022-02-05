@@ -33,6 +33,10 @@ public:
     void addComment(const QString &comment);
     const QList<QString>& getComments() const;
 
+    /**
+     * @brief Converts the AST back into human-readable JASS code.
+     * @return Valid JASS code of the AST.
+     */
     virtual QString toString() const;
 
     QList<VJassAst*> getAllMatching(std::function<bool(VJassAst*)> &&f);

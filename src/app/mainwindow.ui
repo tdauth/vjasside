@@ -207,7 +207,7 @@
      <x>0</x>
      <y>0</y>
      <width>612</width>
-     <height>30</height>
+     <height>17</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -263,7 +263,7 @@
     <addaction name="actionpjass"/>
     <addaction name="actionPJassUpdates"/>
    </widget>
-   <widget class="QMenu" name="menuStandardScripts">
+   <widget class="QMenu" name="menuScripts">
     <property name="title">
      <string>Scripts</string>
     </property>
@@ -282,7 +282,7 @@
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
-   <addaction name="menuStandardScripts"/>
+   <addaction name="menuScripts"/>
    <addaction name="menuCode"/>
    <addaction name="menuSettings"/>
    <addaction name="menuOnline"/>

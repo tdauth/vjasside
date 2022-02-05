@@ -51,9 +51,11 @@ QString VJassGlobal::toString() const {
         result += "array ";
     }
 
-    result += name + " ";
+    result += name;
 
     if (!getChildren().isEmpty()) {
+        result += " = ";
+
         int i = 0;
 
         for (VJassAst *child : getChildren()) {

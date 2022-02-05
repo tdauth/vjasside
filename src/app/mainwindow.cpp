@@ -45,6 +45,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionCommonAi, &QAction::triggered, this, &MainWindow::openCommonai);
     connect(ui->actionBlizzardj, &QAction::triggered, this, &MainWindow::openBlizzardj);
 
+    updateScriptsActions();
+
     connect(ui->actionLineNumbers, &QAction::changed, this, &MainWindow::updateLineNumbersView);
     connect(ui->actionShowWhiteSpaces, &QAction::changed, this, &MainWindow::showWhiteSpaces);
 
@@ -102,6 +104,7 @@ MainWindow::MainWindow(QWidget *parent)
     // basic settings for text
     ui->textEdit->setFont(HighLightInfo::getNormalFont());
     ui->textEdit->setTabStopDistance(20.0);
+    //ui->textEdit->setPlaceholderText(QFile("wc3reforged/minimaljasssnippet.j").readAll());
 
     // initial line
     // move cursor to start to edit the document
@@ -385,6 +388,59 @@ void MainWindow::openBlizzardj() {
             resetDocumentChanges();
         } else {
             QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
+        }
+    }
+}
+
+void MainWindow::openScript() {
+    if (closeFile()) {
+        QAction *action = dynamic_cast<QAction*>(sender());
+
+        if (action != nullptr) {
+            const QString filePath = action->data().toString();
+            QFile f(filePath);
+
+            if (f.open(QIODevice::ReadOnly)) {
+                ui->textEdit->document()->setPlainText(f.readAll());
+                resetDocumentChanges();
+            } else {
+                QMessageBox::warning(this, tr("Error"), tr("Could not open file %1").arg(filePath));
+            }
+        }
+    }
+}
+
+void MainWindow::updateScriptsActions() {
+    int index = ui->menuScripts->actions().indexOf(ui->actionBlizzardj);
+
+    if (index != -1) {
+        while (ui->menuScripts->actions().size() > index + 1) {
+            ui->menuScripts->removeAction(ui->menuScripts->actions().last());
+        }
+    }
+
+    // add actions for all other script files in the folder
+    QFileInfo fileInfo("wc3reforged");
+
+    if (fileInfo.isDir()) {
+        bool first = true;
+
+        for (QDirIterator it(fileInfo.fileName(), QStringList() << "*.j", QDir::Files, QDirIterator::Subdirectories); it.hasNext(); ) {
+            QString file = it.next();
+
+            if (!file.toLower().endsWith("common.j") && !file.toLower().endsWith("common.ai") && !file.toLower().endsWith("blizzard.j")) {
+                if (first) {
+                    ui->menuScripts->addSeparator();
+                }
+
+                QFileInfo fileInfoScript(file);
+                QAction *action = ui->menuScripts->addAction(fileInfoScript.fileName());
+                action->setData(file);
+
+                connect(action, &QAction::triggered, this, &MainWindow::openScript);
+
+                first = false;
+            }
         }
     }
 }

@@ -121,10 +121,17 @@ const QList<QString>& VJassAst::getComments() const {
 }
 
 QString VJassAst::toString() const {
-    QString result = "AST element with children:\n";
+    QString result;
+    int i = 0;
 
     for (VJassAst *child : getChildren()) {
         result += child->toString();
+
+        if (i < getChildren().size() - 1) {
+            result += "\n";
+        }
+
+        i++;
     }
 
     return result;

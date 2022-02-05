@@ -41,6 +41,7 @@ public slots:
     void openCommonj();
     void openCommonai();
     void openBlizzardj();
+    void openScript();
 
     void updateSyntaxErrors(bool checkSyntax, bool autoComplete, bool highlight);
     void updateSyntaxErrorsOnly();
@@ -72,6 +73,8 @@ public slots:
     void resumeParserThread();
 
 private slots:
+    void updateScriptsActions();
+
     void updateCursorPosition(int position);
     void highlightTokensAndAst(const HighLightInfo &highLightInfo, bool checkSyntax);
     void outputListItemDoubleClicked(QListWidgetItem *item);
