@@ -59,8 +59,8 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
 
         if (highlightedBracket == "(" || highlightedBracket == "[") {
             const QString openingBracket = highlightedBracket;
-            const QString closingBracket = openingBracket == "(" ? ")" : "]";
-            int foundOpeningBrackets = 1;
+            const QString closingBracket = highlightedBracket == "(" ? ")" : "]";
+            int foundOpeningBrackets = 0;
             int foundClosingBrackets = 0;
 
             for (int i = highlightBracketColumn; i < text.length(); i++) {
@@ -79,10 +79,10 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
                 }
             }
         } else if (highlightedBracket == ")" || highlightedBracket == "]") {
-            const QString openingBracket = openingBracket == ")" ? "(" : "[";
+            const QString openingBracket = highlightedBracket == ")" ? "(" : "[";
             const QString closingBracket = highlightedBracket;
             int foundOpeningBrackets = 0;
-            int foundClosingBrackets = 1;
+            int foundClosingBrackets = 0;
 
             for (int i = highlightBracketColumn; i >= 0; i--) {
                 if (text.mid(i, 1) == closingBracket) {

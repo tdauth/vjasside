@@ -112,7 +112,7 @@ int FindDialog::replace(int startPosition, int maxMatches) {
                 textCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, match.capturedLength());
                 textCursor.removeSelectedText();
                 textCursor.insertText(replacementText);
-                textCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, match.capturedLength());
+                textCursor.setPosition(textCursor.selectionEnd());
                 matches++;
             } else {
                 textCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
@@ -127,10 +127,14 @@ int FindDialog::replace(int startPosition, int maxMatches) {
             if ((caseSensitive && searchExpression == compareTo) || (!caseSensitive && searchExpression.toLower() == compareTo.toLower())) {
                 textCursor.removeSelectedText();
                 textCursor.insertText(replacementText);
+                textCursor.setPosition(textCursor.selectionEnd());
                 matches++;
+            } else {
+                textCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor);
+                QTextCursor plainTextEditCursor = plainTextEdit->textCursor();
+                plainTextEditCursor.setPosition(textCursor.position());
             }
 
-            textCursor.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, searchExpressionLength);
             QTextCursor plainTextEditCursor = plainTextEdit->textCursor();
             plainTextEditCursor.setPosition(textCursor.position());
         }

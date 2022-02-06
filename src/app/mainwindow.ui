@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>612</width>
-    <height>554</height>
+    <width>885</width>
+    <height>740</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -76,7 +76,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>2</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -206,7 +206,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>612</width>
+     <width>885</width>
      <height>17</height>
     </rect>
    </property>
@@ -247,12 +247,6 @@
     <addaction name="actionLineNumbers"/>
     <addaction name="actionShowWhiteSpaces"/>
    </widget>
-   <widget class="QMenu" name="menuSettings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <addaction name="actionSettings"/>
-   </widget>
    <widget class="QMenu" name="menuOnline">
     <property name="title">
      <string>Online</string>
@@ -284,7 +278,6 @@
    <addaction name="menuView"/>
    <addaction name="menuScripts"/>
    <addaction name="menuCode"/>
-   <addaction name="menuSettings"/>
    <addaction name="menuOnline"/>
    <addaction name="menuAbout"/>
   </widget>

@@ -32,6 +32,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->splitter->setStretchFactor(0, 1);
     ui->splitter->setStretchFactor(1, 0);
 
+    // make the status bar not disappear
+    ui->statusbar->addPermanentWidget(new QLabel(tr("")));
+
     connect(ui->actionNew, &QAction::triggered, this, &MainWindow::newFile);
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile);
     connect(ui->actionSaveAs, &QAction::triggered, this, &MainWindow::saveAs);
@@ -649,9 +652,9 @@ void MainWindow::updateWindowStatusBar() {
     if (currentResults != nullptr && currentResults->highLightInfo.getAstElementsByLocation().contains(location)) {
         VJassAst *ast = currentResults->highLightInfo.getAstElementsByLocation()[location];
 
-        statusBar()->showMessage(tr("Column: %1, Line: %2      ParserState: %3      %4      %5").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName).arg(ast->toString()));
+        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3      Parser: %4      %5").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName).arg(ast->toString()));
     } else {
-        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3      %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName));
+        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3      Parser: %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName));
     }
 }
 

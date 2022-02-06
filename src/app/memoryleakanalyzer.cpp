@@ -6,7 +6,18 @@
 const QMap<QString, QString> MemoryLeakAnalyzer::LEAKING_TYPES = {
     { "location", "RemoveLocation" },
     { "rect", "RemoveRect" },
-    { "unit", "RemoveUnit" }
+    { "unit", "RemoveUnit" },
+    { "trigger", "DestroyTrigger" },
+    { "effect", "DestroyEffect" },
+    { "group", "DestroyGroup" },
+    { "weathereffect", "RemoveWeatherEffect" },
+    { "effect", "DestroyEffect" },
+    { "lightning", "DestroyLightning" },
+    { "image", "DestroyImage" },
+    { "ubersplat", "DestroyUbersplat" },
+    { "fogmodifier", "DestroyFogModifier" },
+    { "item", "RemoveItem" },
+    { "destructable", "RemoveDestructable" }
 };
 
 MemoryLeakAnalyzer::MemoryLeakAnalyzer(VJassAst *ast)
