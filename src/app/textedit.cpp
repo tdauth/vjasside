@@ -14,6 +14,9 @@ TextEdit::~TextEdit() {
 }
 
 void TextEdit::keyPressEvent(QKeyEvent *e) {
+    //qDebug() << "Key press event in plain text edit with key" << e->key() << "which is in hex" << QString::to (e->key()).toInt(16);
+
+    // add/remove tabs for the whole selection instead of replactin the selection by a tab character
     if (e->key() == Qt::Key_Tab || e->key() == Qt::Key_Backtab) {
             QTextCursor cur = textCursor();
 
@@ -58,20 +61,29 @@ void TextEdit::keyPressEvent(QKeyEvent *e) {
             } else {
                 QPlainTextEdit::keyPressEvent(e);
             }
-    } else if (e->key() == Qt::Key_Enter) {
+    } else if (e->key() == Qt::Key_Return) { //  == Qt::Key_Enter
         // add spaces to the same level as the line before
         QTextCursor cur = textCursor();
         //int a = cur.anchor();
         //int p = cur.position();
         QString blockText = cur.block().text();
 
+        //qDebug() << "Enter key in text edit with block text" << blockText;
+
         if (!blockText.isEmpty()) {
             QRegularExpression regularExpression("^([\t ]*)");
             QRegularExpressionMatch regularExpressionMatch = regularExpression.match(blockText);
-            QString leadingSpaces = regularExpressionMatch.captured(1);
-            cur.insertText("\n");
-            cur.movePosition(QTextCursor::Down);
-            cur.insertText(leadingSpaces);
+
+            QPlainTextEdit::keyPressEvent(e);
+
+            if (regularExpressionMatch.hasMatch()) {
+                QString leadingSpaces = regularExpressionMatch.captured(1);
+                cur.insertText(leadingSpaces);
+
+                //qDebug() << "Insert leading spaces" << leadingSpaces;
+            }
+        } else {
+            QPlainTextEdit::keyPressEvent(e);
         }
     } else if (e->key() == Qt::Key_Control) {
         pressedControl = true;
