@@ -207,7 +207,7 @@
      <x>0</x>
      <y>0</y>
      <width>885</width>
-     <height>17</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -224,6 +224,7 @@
     <property name="title">
      <string>About</string>
     </property>
+    <addaction name="actionAboutPJass"/>
     <addaction name="actionBaradesVJassIDE"/>
    </widget>
    <widget class="QMenu" name="menuCode">
@@ -467,6 +468,11 @@
    </property>
    <property name="text">
     <string>Analyze Memory Leaks</string>
+   </property>
+  </action>
+  <action name="actionAboutPJass">
+   <property name="text">
+    <string>pjass</string>
    </property>
   </action>
  </widget>

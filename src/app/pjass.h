@@ -16,14 +16,16 @@ class PJass : public QObject
     Q_OBJECT
 
 public:
+    PJass(const QString &filePath, QObject *parent = nullptr);
     PJass(QObject *parent = nullptr);
 
-    int run(const QString &filePath, const QString &commonj, const QString &commonai, const QString &blizzardj, const QString &code);
     int run(const QString &commonj, const QString &commonai, const QString &blizzardj, const QString &code);
     int run(const QString &code);
+    int runVersion();
 
     const QString& getStandardOutput() const;
     const QString& getStandardError() const;
+    const QString& getVersion() const;
 
     static QList<VJassParseError> outputToParseErrors(const QString &output);
 
@@ -34,9 +36,11 @@ private slots:
     void finished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
+    QString filePath;
     QProcess process;
     QString standardOutput;
     QString standardError;
+    QString version;
 };
 
 #endif // PJASS_H

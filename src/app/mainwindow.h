@@ -57,6 +57,7 @@ public slots:
     void openCodeOnHive();
     void openPJassUpdates();
 
+    void aboutPJassDialog();
     void aboutDialog();
 
     void restartTimer();

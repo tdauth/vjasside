@@ -77,7 +77,7 @@ wc3reforgedscripts.files += $$files(../../wc3reforged/*.j) \
                             $$files(../../wc3reforged/*.ai)
 wc3reforgedscripts.path = $$OUT_PWD/wc3reforged
 
-pjass.files += $$files(../../pjass/*.exe)
+pjass.files += $$files(../../pjass/*)
 pjass.path = $$OUT_PWD/pjass
 
 #message("My scripts: " + $$files(../../wc3reforged/*.j) + " copied into " + $$OUT_PWD/wc3reforged)

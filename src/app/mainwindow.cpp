@@ -71,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionCodeOnHive, &QAction::triggered, this, &MainWindow::openCodeOnHive);
     connect(ui->actionPJassUpdates, &QAction::triggered, this, &MainWindow::openPJassUpdates);
 
+    connect(ui->actionAboutPJass, &QAction::triggered, this, &MainWindow::aboutPJassDialog);
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
     // whenever the user changes the text we have to wait with our highlighting and syntax check for some time to prevent blocking the GUI all the time
@@ -585,6 +586,14 @@ void MainWindow::openCodeOnHive() {
 
 void MainWindow::openPJassUpdates() {
     QDesktopServices::openUrl(QUrl("https://www.hiveworkshop.com/threads/pjass-updates.258738/"));
+}
+
+void MainWindow::aboutPJassDialog() {
+    PJass pjass;
+    int pjassExitCode = pjass.runVersion();
+    QString version = pjass.getVersion();
+
+    QMessageBox::about(this, tr("pjass %1").arg(version), tr("JASS syntax checker."));
 }
 
 void MainWindow::aboutDialog() {

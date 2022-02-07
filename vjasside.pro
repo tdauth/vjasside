@@ -19,4 +19,5 @@ DISTFILES += \
     wc3reforged/common.j \
     wc3reforged/common.ai \
     wc3reforged/Blizzard.j \
-    pjass/pjass.exe
+    pjass/pjass.exe \
+    pjass/pjass

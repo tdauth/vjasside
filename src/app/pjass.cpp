@@ -2,14 +2,22 @@
 
 #include "pjass.h"
 
-PJass::PJass(QObject *parent) : QObject(parent), process(QProcess(this)) {
+PJass::PJass(const QString &filePath, QObject *parent) : QObject(parent), filePath(filePath), process(QProcess(this)) {
     connect(&process, &QProcess::readyReadStandardOutput, this, &PJass::readStandardOutput);
     connect(&process, &QProcess::readyReadStandardError, this, &PJass::readStandardError);
     connect(&process, &QProcess::errorOccurred, this, &PJass::errorOcurred);
     connect(&process, &QProcess::finished, this, &PJass::finished);
 }
 
-int PJass::run(const QString &filePath, const QString &commonj, const QString &commonai, const QString &blizzardj, const QString &code) {
+PJass::PJass(QObject *parent) {
+#ifdef Q_OS_WIN32
+    PJass("pjass/pjass.exe", parent);
+#else
+    PJass("pjass/pjass", parent);
+#endif
+}
+
+int PJass::run(const QString &commonj, const QString &commonai, const QString &blizzardj, const QString &code) {
     QTemporaryFile file("vjasside-pjass-input-XXXXXX.j");
 
     if (file.open()) {
@@ -76,16 +84,28 @@ int PJass::run(const QString &filePath, const QString &commonj, const QString &c
     */
 }
 
-int PJass::run(const QString &commonj, const QString &commonai, const QString &blizzardj, const QString &code) {
-#ifdef Q_OS_WIN32
-    return run("pjass/pjass.exe", commonj, commonai, blizzardj, code);
-#else
-    return run("pjass/pjass", commonj, commonai, blizzardj, code);
-#endif
-}
-
 int PJass::run(const QString &code) {
     return run("wc3reforged/common.j", "wc3reforged/common.ai", "wc3reforged/Blizzard.j", code);
+}
+
+int PJass::runVersion() {
+    QSignalBlocker signalBlocker(process);
+
+    process.start(filePath, QStringList() << "-v");
+
+    process.waitForStarted();
+
+    process.waitForReadyRead();
+
+    process.waitForReadyRead();
+
+    process.waitForFinished();
+
+    qDebug() << "pjass exit with" << process.exitCode();
+
+    version = process.readAllStandardOutput();
+
+    return process.exitCode();
 }
 
 const QString& PJass::getStandardOutput() const {
@@ -94,6 +114,10 @@ const QString& PJass::getStandardOutput() const {
 
 const QString& PJass::getStandardError() const {
     return standardError;
+}
+
+const QString& PJass::getVersion() const {
+    return version;
 }
 
 QList<VJassParseError> PJass::outputToParseErrors(const QString &output) {
