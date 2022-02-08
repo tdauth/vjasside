@@ -163,10 +163,10 @@ QList<VJassAst*> VJassAst::getAllMatching(std::function<bool(VJassAst*)> &&f) {
 
 void VJassAst::sortByPosition(QList<VJassAst*> &list) {
     std::sort(list.begin(), list.end(), [](VJassAst *e1, VJassAst *e2) {
-       const int lineDiff = e2->getLine() - e1->getLine();
+       const int lineDiff = e1->getLine() - e2->getLine();
 
        if (lineDiff == 0) {
-           return e2->getColumn() - e1->getColumn();
+           return e1->getColumn() - e2->getColumn();
        }
 
        return lineDiff;

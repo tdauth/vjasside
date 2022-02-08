@@ -143,8 +143,16 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
             }
         }
 
-        // TODO segmentation fault
-        //VJassAst::sortByPosition(astElements);
+        VJassAst::sortByPosition(astElements);
+        std::sort(this->parseErrors.begin(), this->parseErrors.end(), [](VJassParseError &e1, VJassParseError &e2) {
+           const int lineDiff = e1.getLine() - e2.getLine();
+
+           if (lineDiff == 0) {
+               return e1.getColumn() - e2.getColumn();
+           }
+
+           return lineDiff;
+        });
 
         if (analyzeMemoryLeaks) {
             MemoryLeakAnalyzer memoryLeakAnalyzer(ast);
