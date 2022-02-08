@@ -15,7 +15,7 @@ void SyntaxHighlighter::highlightBlock(const QString &text) {
     // only format necessary tokens
     VJassScanner scanner;
     QList<VJassToken> tokens = scanner.scan(text, true);
-    HighLightInfo highLightInfo(text, tokens, nullptr, "", "", true, false);
+    HighLightInfo highLightInfo(text, tokens, nullptr, QList<VJassParseError>(), true, false);
 
     // the background color depends on whether it is the current line
     QTextCharFormat textCharFormat = highLightInfo.getNormalFormat();

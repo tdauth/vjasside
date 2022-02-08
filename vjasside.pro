@@ -20,4 +20,6 @@ DISTFILES += \
     wc3reforged/common.ai \
     wc3reforged/Blizzard.j \
     pjass/pjass.exe \
-    pjass/pjass
+    pjass/pjass \
+    jasshelper/jasshelper.exe \
+    jasshelper/jasshelper.conf

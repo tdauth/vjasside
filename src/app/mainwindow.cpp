@@ -7,6 +7,7 @@
 #include "vjassscanner.h"
 #include "highlightinfo.h"
 #include "pjass.h"
+#include "jasshelper.h"
 #include "memoryleakanalyzer.h"
 #include "version.h"
 
@@ -33,7 +34,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->splitter->setStretchFactor(1, 0);
 
     // make the status bar not disappear
-    ui->statusbar->addPermanentWidget(new QLabel(tr("")));
+    statusBar = new QLabel(tr(""));
+    ui->statusbar->addPermanentWidget(statusBar, 1);
 
     connect(ui->actionNew, &QAction::triggered, this, &MainWindow::newFile);
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::openFile);
@@ -64,6 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionVJassIDESyntaxChecker, &QAction::triggered, this, &MainWindow::updatePJassSyntaxCheckerVJassIDE);
     connect(ui->actionPJassSyntaxChecker, &QAction::triggered, this, &MainWindow::updatePJassSyntaxCheckerPJass);
+    connect(ui->actionJassHelperSyntaxChecker, &QAction::triggered, this, &MainWindow::updateSyntaxCheckerJassHelper);
 
     connect(ui->actionAnalyzeMemoryLeaks, &QAction::triggered, this, &MainWindow::setAnalyzeMemoryLeaks);
 
@@ -72,6 +75,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionPJassUpdates, &QAction::triggered, this, &MainWindow::openPJassUpdates);
 
     connect(ui->actionAboutPJass, &QAction::triggered, this, &MainWindow::aboutPJassDialog);
+    connect(ui->actionAboutJassHelper, &QAction::triggered, this, &MainWindow::aboutJassHelperDialog);
     connect(ui->actionBaradesVJassIDE, &QAction::triggered, this, &MainWindow::aboutDialog);
 
     // whenever the user changes the text we have to wait with our highlighting and syntax check for some time to prevent blocking the GUI all the time
@@ -150,21 +154,37 @@ MainWindow::MainWindow(QWidget *parent)
                             QList<VJassToken> tokens = scanner.scan(input, true);
                             qDebug() << "Tokens after scanning" << tokens.size();
                             VJassAst *ast = parser.parse(tokens);
-                            QString pjassStandardOutput;
-                            QString pjassErrorOutput;
+
+                            const int syntaxChecker = this->syntaxChecker.loadAcquire();
+                            QList<VJassParseError> parseErrors;
 
                             // pjass syntax check
-                            if (this->syntaxChecker.loadAcquire() == 1) {
+                            if (syntaxChecker == 1) {
                                 PJass pjass;
                                 int pjassExitCode = pjass.run(input);
 
-                                pjassStandardOutput = pjass.getStandardOutput();
-                                pjassErrorOutput = pjass.getStandardError();
+                                QString jassStandardOutput = pjass.getStandardOutput();
+                                QString pjassErrorOutput = pjass.getStandardError();
                                 qDebug() << "Using pjass and getting exit code" << pjassExitCode;
+
+                                parseErrors = PJass::outputToParseErrors(jassStandardOutput);
+                            // JassHelper syntax check
+                            } else if (syntaxChecker == 2) {
+                                JassHelper jassHelper;
+                                int jassHelperExitCode = jassHelper.run(input);
+
+                                QString jassHelperStandardOutput = jassHelper.getStandardOutput();
+                                QString jassHelperErrorOutput = jassHelper.getStandardError();
+                                qDebug() << "Using JassHelper and getting exit code" << jassHelperExitCode;
+
+                                parseErrors = JassHelper::outputToParseErrors(jassHelperStandardOutput);
+                            // vjasside syntax check
+                            } else {
+                                parseErrors = ast->getAllParseErrors();
                             }
 
                             // this stores also the required highlighting information
-                            ScanAndParseResults *results = new ScanAndParseResults(input, std::move(tokens), ast, pjassStandardOutput, pjassErrorOutput, this->analyzeMemoryLeaks.loadAcquire() == 1);
+                            HighLightInfo *results = new HighLightInfo(input, std::move(tokens), ast, parseErrors, this->analyzeMemoryLeaks.loadAcquire() == 1);
 
                             if (this->scanAndParsePaused.loadAcquire() == 0) {
                                 // by the end there could be new input and we have to start again
@@ -596,6 +616,14 @@ void MainWindow::aboutPJassDialog() {
     QMessageBox::about(this, tr("pjass %1").arg(version), tr("JASS syntax checker."));
 }
 
+void MainWindow::aboutJassHelperDialog() {
+    JassHelper jassHelper;
+    int jassHelperExitCode = jassHelper.runVersion();
+    QString version = jassHelper.getVersion();
+
+    QMessageBox::about(this, tr("JassHelper %1").arg(version), tr("JassHelper syntax checker."));
+}
+
 void MainWindow::aboutDialog() {
     QMessageBox::about(this, tr("Baradé's vJass IDE %1").arg(VJASSIDE_VERSION), tr("Integrated development environment for the scripting languages JASS and vJass from the computer game Warcraft III. This is an Open Source application based on the Qt framework. Visit <a href=\"https://github.com/tdauth/vjasside\">the GitHub repository</a> to contribute or star it."));
 }
@@ -658,12 +686,12 @@ void MainWindow::updateWindowStatusBar() {
 
     const QString parserState = timerId != 0 ? tr("Waiting for user stopping") : (syncDocumentState ? tr("Done") : tr("Parsing"));
 
-    if (currentResults != nullptr && currentResults->highLightInfo.getAstElementsByLocation().contains(location)) {
-        VJassAst *ast = currentResults->highLightInfo.getAstElementsByLocation()[location];
+    if (currentResults != nullptr && currentResults->getAstElementsByLocation().contains(location)) {
+        VJassAst *ast = currentResults->getAstElementsByLocation()[location];
 
-        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3      Parser: %4      %5").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName).arg(ast->toString()));
+        statusBar->setText(tr("Column: %1, Line: %2      Parser State: %3      Parser: %4      %5").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName).arg(ast->toString()));
     } else {
-        statusBar()->showMessage(tr("Column: %1, Line: %2      Parser State: %3      Parser: %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName));
+        statusBar->setText(tr("Column: %1, Line: %2      Parser State: %3      Parser: %4").arg(currentColumn + 1).arg(currentLine + 1).arg(parserState).arg(parserName));
     }
 }
 
@@ -676,35 +704,52 @@ void MainWindow::resumeParserThread() {
 }
 
 void MainWindow::updatePJassSyntaxCheckerVJassIDE(bool checked) {
-    if (checked) {
-        syntaxChecker.storeRelease(0);
-        parserName ="vjasside";
-    } else {
-        syntaxChecker.storeRelease(1);
-        parserName ="pjass";
-    }
-
-    QSignalBlocker signalBlocker(ui->actionPJassSyntaxChecker);
+    QSignalBlocker signalBlocker1(ui->actionPJassSyntaxChecker);
     ui->actionPJassSyntaxChecker->setChecked(!checked);
+    QSignalBlocker signalBlocker2(ui->actionJassHelperSyntaxChecker);
+    ui->actionJassHelperSyntaxChecker->setChecked(!checked);
+
+    updateSyntaxCheckerFromActions();
 
     // this will update the syntax check
     restartTimer();
 }
 
 void MainWindow::updatePJassSyntaxCheckerPJass(bool checked) {
-    if (checked) {
-        syntaxChecker.storeRelease(1);
-        parserName ="pjass";
-    } else {
-        syntaxChecker.storeRelease(0);
-        parserName ="vjasside";
-    }
-
-    QSignalBlocker signalBlocker(ui->actionVJassIDESyntaxChecker);
+    QSignalBlocker signalBlocker1(ui->actionVJassIDESyntaxChecker);
     ui->actionVJassIDESyntaxChecker->setChecked(!checked);
+    QSignalBlocker signalBlocker2(ui->actionJassHelperSyntaxChecker);
+    ui->actionJassHelperSyntaxChecker->setChecked(!checked);
+
+    updateSyntaxCheckerFromActions();
 
     // this will update the syntax check
     restartTimer();
+}
+
+void MainWindow::updateSyntaxCheckerJassHelper(bool checked) {
+    QSignalBlocker signalBlocker1(ui->actionVJassIDESyntaxChecker);
+    ui->actionVJassIDESyntaxChecker->setChecked(!checked);
+    QSignalBlocker signalBlocker2(ui->actionPJassSyntaxChecker);
+    ui->actionPJassSyntaxChecker->setChecked(!checked);
+
+    updateSyntaxCheckerFromActions();
+
+    // this will update the syntax check
+    restartTimer();
+}
+
+void MainWindow::updateSyntaxCheckerFromActions() {
+    if (ui->actionPJassSyntaxChecker->isChecked()) {
+        syntaxChecker.storeRelease(1);
+        parserName ="pjass";
+    } else if (ui->actionVJassIDESyntaxChecker->isChecked()) {
+        syntaxChecker.storeRelease(0);
+        parserName ="vjasside";
+    } else {
+        syntaxChecker.storeRelease(2);
+        parserName ="JassHelper";
+    }
 }
 
 void MainWindow::setAnalyzeMemoryLeaks(bool checked) {
@@ -798,7 +843,7 @@ void MainWindow::updateOutliner() {
     ui->outlinerListWidget->clear();
 
     if (currentResults != nullptr) {
-        for (const VJassAst *astElement : currentResults->highLightInfo.getAstElements()) {
+        for (const VJassAst *astElement : currentResults->getAstElements()) {
             const QString text = astElement->toString();
 
             if ((text.startsWith(VJassToken::KEYWORD_NATIVE) && ui->checkBoxNatives->isChecked())
@@ -818,7 +863,7 @@ void MainWindow::updateOutliner() {
         ui->outlinerListWidget->addItem(tr("No matching elements."));
         ui->tabWidget->setTabText(1, tr("0 Elements"));
     } else {
-        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", currentResults->highLightInfo.getAstElements().length()));
+        ui->tabWidget->setTabText(1, tr("%n Elements", "%n Elements", currentResults->getAstElements().length()));
     }
 }
 
@@ -826,7 +871,7 @@ void MainWindow::updateMemoryLeaks() {
     ui->memoryLeaksListWidget->clear();
 
     if (currentResults != nullptr) {
-        for (const VJassAst *astElement : currentResults->highLightInfo.getAstLeakingElements()) {
+        for (const VJassAst *astElement : currentResults->getAstLeakingElements()) {
             const QString text = astElement->toString();
 
             QListWidgetItem *item = new QListWidgetItem(tr("%1 - line %2 and column %3").arg(astElement->toString()).arg(astElement->getLine() + 1).arg(astElement->getColumn() + 1));
@@ -839,7 +884,7 @@ void MainWindow::updateMemoryLeaks() {
         ui->memoryLeaksListWidget->addItem(tr("No memory leaks."));
         ui->tabWidget->setTabText(2, tr("0 Memory Leaks"));
     } else {
-        ui->tabWidget->setTabText(2, tr("%n Memory Leaks", "%n Memory Leaks", currentResults->highLightInfo.getAstLeakingElements().length()));
+        ui->tabWidget->setTabText(2, tr("%n Memory Leaks", "%n Memory Leaks", currentResults->getAstLeakingElements().length()));
     }
 }
 
@@ -862,7 +907,7 @@ void MainWindow::timerEvent(QTimerEvent *event) {
     } else if (timerId == 0 && event->timerId() == timerIdCheck) {
         //qDebug() << "Checking scan and parse result";
 
-        ScanAndParseResults *scanAndParseResults = this->scanAndParseResults.fetchAndStoreAcquire(nullptr);
+        HighLightInfo *scanAndParseResults = this->scanAndParseResults.fetchAndStoreAcquire(nullptr);
 
         // if there are results we will highlight everything now
         if (scanAndParseResults != nullptr) {
@@ -886,14 +931,14 @@ void MainWindow::timerEvent(QTimerEvent *event) {
             if (checkSyntax || autoComplete || highlight) {
                 if (highlight) {
                     qDebug() << "Highlight!";
-                    highlightTokensAndAst(currentResults->highLightInfo, checkSyntax);
+                    highlightTokensAndAst(*currentResults, checkSyntax);
                 }
 
                 if (checkSyntax || autoComplete) {
                     // update syntax errors output widget
                     ui->outputListWidget->clear();
 
-                    const QList<VJassParseError> &parseErrors = currentResults->highLightInfo.getParseErrors();
+                    const QList<VJassParseError> &parseErrors = currentResults->getParseErrors();
 
                     for (const VJassParseError &parseError : parseErrors) {
                         QListWidgetItem *item = new QListWidgetItem(tr("Syntax error at line %1 and column %2: %3").arg(parseError.getLine() + 1).arg(parseError.getColumn() + 1).arg(parseError.getError()));
@@ -914,12 +959,12 @@ void MainWindow::timerEvent(QTimerEvent *event) {
                     // update memory leaks
                     updateMemoryLeaks();
 
-                    if (autoComplete && currentResults->ast->getCodeCompletionSuggestions().size() > 0) {
+                    if (autoComplete && currentResults->getAst()->getCodeCompletionSuggestions().size() > 0) {
                         popup->clear();
                         popup->setFocusProxy(this);
                         QTreeWidgetItem *firstItem = nullptr;
 
-                        for (VJassAst *codeCompletionSuggestion : currentResults->ast->getCodeCompletionSuggestions()) {
+                        for (VJassAst *codeCompletionSuggestion : currentResults->getAst()->getCodeCompletionSuggestions()) {
                             QTreeWidgetItem *item = new QTreeWidgetItem(popup, QStringList(codeCompletionSuggestion->toString()));
 
                             if (firstItem == nullptr) {

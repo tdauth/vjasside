@@ -5,6 +5,7 @@
 #include <QTreeWidget>
 #include <QModelIndex>
 #include <QListWidgetItem>
+#include <QLabel>
 #include <QThread>
 #include <QAtomicInt>
 #include <QAtomicPointer>
@@ -58,6 +59,7 @@ public slots:
     void openPJassUpdates();
 
     void aboutPJassDialog();
+    void aboutJassHelperDialog();
     void aboutDialog();
 
     void restartTimer();
@@ -82,6 +84,9 @@ private slots:
 
     void updatePJassSyntaxCheckerVJassIDE(bool checked);
     void updatePJassSyntaxCheckerPJass(bool checked);
+    void updateSyntaxCheckerJassHelper(bool checked);
+
+    void updateSyntaxCheckerFromActions();
 
     void setAnalyzeMemoryLeaks(bool checked);
 
@@ -102,6 +107,9 @@ protected:
 private:
     Ui::MainWindow *ui;
 
+    // we use a permanent status bar widget
+    QLabel *statusBar = nullptr;
+
     FindDialog *findDialog = nullptr;
 
     // selection
@@ -121,29 +129,10 @@ private:
     // there is a timer which waits for some time until the user doesnt input anything anymore
     // only when this timer is not running anymore we retrieve the scan and parse results every X seconds
     // as soon as they are available we update the text edit
-    struct ScanAndParseResults {
-        HighLightInfo highLightInfo;
-        QList<VJassToken> tokens;
-        // TODO keep on stack but without heap there happens weird stuff on copying!
-        VJassAst *ast;
-        QString pjassStandardOutput;
-        QString pjassErrorOutput;
-
-        ScanAndParseResults(const QString &text, QList<VJassToken> &&tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput, bool analyzeMemoryLeaks) : highLightInfo(text, tokens, ast, pjassStandardOutput, pjassErrorOutput, false, false, analyzeMemoryLeaks) /* initialize after moving tokens */, tokens(std::move(tokens)), ast(ast) {
-        }
-
-        virtual ~ScanAndParseResults() {
-            if (ast != nullptr) {
-                delete ast;
-                ast = nullptr;
-            }
-        }
-    };
-
     int timerId;
     int timerIdCheck;
     QAtomicPointer<QString> scanAndParseInput;
-    QAtomicPointer<ScanAndParseResults> scanAndParseResults;
+    QAtomicPointer<HighLightInfo> scanAndParseResults;
     QAtomicInt scanAndParsePaused;
     QThread *scanAndParseThread;
     QAtomicInt stopScanAndParseThread;
@@ -152,6 +141,6 @@ private:
     QString parserName;
     bool syncDocumentState = true;
 
-    ScanAndParseResults *currentResults = nullptr;
+    HighLightInfo *currentResults = nullptr;
 };
 #endif // MAINWINDOW_H

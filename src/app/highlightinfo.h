@@ -21,7 +21,8 @@
 class HighLightInfo
 {
 public:
-    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput = QString(), const QString &pjassErrorOutput = QString(), bool fillCustomTextCharFormat = true, bool createTextDocument = false, bool analyzeMemoryLeaks = false);
+    HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QList<VJassParseError> &parseErrors = QList<VJassParseError>(), bool fillCustomTextCharFormat = true, bool createTextDocument = false, bool analyzeMemoryLeaks = false);
+    virtual ~HighLightInfo();
 
     struct Location {
         int line;
@@ -79,6 +80,7 @@ public:
 
     const QMap<Location, CustomTextCharFormat>& getFormattedLocations() const;
     QList<QTextEdit::ExtraSelection> toExtraSelections(QTextDocument *textDocument, bool checkSyntax) const;
+    VJassAst* getAst() const;
     QTextDocument* getTextDocument() const;
     const QList<VJassParseError>& getParseErrors() const;
     const QList<VJassAst*>& getAstElements() const;
@@ -93,6 +95,7 @@ private:
     CustomTextCharFormat& getCustomTextCharFormat(int line, int column);
 
     QMap<Location, CustomTextCharFormat> customTextCharFormats;
+    VJassAst *ast;
     QTextDocument *textDocument;
     QList<QTextEdit::ExtraSelection> extraSelections;
     QList<VJassParseError> parseErrors;

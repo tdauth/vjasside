@@ -5,10 +5,11 @@
 #include "vjassglobal.h"
 #include "vjasstype.h"
 #include "pjass.h"
+#include "jasshelper.h"
 #include "memoryleakanalyzer.h"
 #include "highlightinfo.h"
 
-HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QString &pjassStandardOutput, const QString &pjassErrorOutput, bool fillCustomTextCharFormat, bool createTextDocument, bool analyzeMemoryLeaks) : textDocument(nullptr)
+HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &tokens, VJassAst *ast, const QList<VJassParseError> &parseErrors, bool fillCustomTextCharFormat, bool createTextDocument, bool analyzeMemoryLeaks) : ast(ast), textDocument(nullptr), parseErrors(parseErrors)
 {
     //qDebug() << "Getting tokens" << tokens.size();
 
@@ -119,25 +120,6 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
         }
         */
 
-        if (pjassStandardOutput.isEmpty() && pjassErrorOutput.isEmpty()) {
-            // store since it takes some time to get all
-            parseErrors = ast->getAllParseErrors();
-            // sort by line and column to show them in the correct order
-            // TODO segmentation fault when accessing the line number of a parse error!
-            /*
-            std::sort(parseErrors.begin(), parseErrors.end(), [](const VJassParseError &p1, const VJassParseError &p2) {
-               const int lineDiff = p1.getLine() - p2.getLine();
-
-               if (lineDiff == 0) {
-                    return p1.getColumn() - p2.getColumn();
-               } else {
-                    return lineDiff;
-               }
-            });
-            */
-        } else {
-            parseErrors = PJass::outputToParseErrors(pjassStandardOutput);
-        }
 
         // store all AST elements for the outliner
         QStack<VJassAst*> stack;
@@ -218,6 +200,13 @@ HighLightInfo::HighLightInfo(const QString &text, const QList<VJassToken> &token
     }
 }
 
+HighLightInfo::~HighLightInfo() {
+    if (ast != nullptr) {
+        delete ast;
+        ast = nullptr;
+    }
+}
+
 void HighLightInfo::CustomTextCharFormat::applyToTextCharFormat(QTextCharFormat &fmt, bool checkSyntax) const {
     //qDebug() << "Applying custom format in line" << line << "and column" << column;
 
@@ -277,6 +266,10 @@ const QMap<HighLightInfo::Location, HighLightInfo::CustomTextCharFormat>& HighLi
 QList<QTextEdit::ExtraSelection> HighLightInfo::toExtraSelections(QTextDocument * /* textDocument */, bool /* checkSyntax */) const {
     // TODO use checkSyntax to remove all the underlining etc.
     return extraSelections;
+}
+
+VJassAst* HighLightInfo::getAst() const {
+    return ast;
 }
 
 QTextDocument* HighLightInfo::getTextDocument() const {

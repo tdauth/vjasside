@@ -14,6 +14,7 @@ SOURCES += \
     autocompletionpopup.cpp \
     finddialog.cpp \
     highlightinfo.cpp \
+    jasshelper.cpp \
     linenumbers.cpp \
     memoryleakanalyzer.cpp \
     pjass.cpp \
@@ -42,6 +43,7 @@ HEADERS += \
     autocompletionpopup.h \
     finddialog.h \
     highlightinfo.h \
+    jasshelper.h \
     linenumbers.h \
     memoryleakanalyzer.h \
     pjass.h \
@@ -71,7 +73,7 @@ FORMS += \
     linenumbers.ui \
     mainwindow.ui
 
-COPIES += wc3reforgedscripts pjass
+COPIES += wc3reforgedscripts pjass jasshelper
 
 wc3reforgedscripts.files += $$files(../../wc3reforged/*.j) \
                             $$files(../../wc3reforged/*.ai)
@@ -79,6 +81,9 @@ wc3reforgedscripts.path = $$OUT_PWD/wc3reforged
 
 pjass.files += $$files(../../pjass/*)
 pjass.path = $$OUT_PWD/pjass
+
+jasshelper.files += $$files(../../jasshelper/*)
+jasshelper.path = $$OUT_PWD/jasshelper
 
 #message("My scripts: " + $$files(../../wc3reforged/*.j) + " copied into " + $$OUT_PWD/wc3reforged)
 

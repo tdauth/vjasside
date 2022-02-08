@@ -207,7 +207,7 @@
      <x>0</x>
      <y>0</y>
      <width>885</width>
-     <height>30</height>
+     <height>17</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -225,6 +225,7 @@
      <string>About</string>
     </property>
     <addaction name="actionAboutPJass"/>
+    <addaction name="actionAboutJassHelper"/>
     <addaction name="actionBaradesVJassIDE"/>
    </widget>
    <widget class="QMenu" name="menuCode">
@@ -238,6 +239,7 @@
     <addaction name="separator"/>
     <addaction name="actionVJassIDESyntaxChecker"/>
     <addaction name="actionPJassSyntaxChecker"/>
+    <addaction name="actionJassHelperSyntaxChecker"/>
     <addaction name="separator"/>
     <addaction name="actionAnalyzeMemoryLeaks"/>
    </widget>
@@ -473,6 +475,19 @@
   <action name="actionAboutPJass">
    <property name="text">
     <string>pjass</string>
+   </property>
+  </action>
+  <action name="actionJassHelperSyntaxChecker">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>JassHelper Syntax Checker</string>
+   </property>
+  </action>
+  <action name="actionAboutJassHelper">
+   <property name="text">
+    <string>JassHelper</string>
    </property>
   </action>
  </widget>
