@@ -12,6 +12,8 @@ class TestHighlightInfo : public QObject
         void canHoldTokensFromCommonJ();
         void canHoldTokensFromBlizzardJ();
         //void canOrderCodeElementsFromCommonJ();
+
+        void canHoldAst();
 };
 
 #endif // TESTHIGHLIGHTINFO_H

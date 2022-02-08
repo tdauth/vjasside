@@ -337,6 +337,7 @@ inline VJassExpression* parseExpression(const QList<VJassToken> &tokens, const V
                 result->setType(VJassExpression::Identifier);
                 result->setValue(nextToken.getValue());
 
+                qDebug() << "Before printing found identifier";
                 qDebug() << "Found identifier" << nextToken.getValue();
 
                 break;

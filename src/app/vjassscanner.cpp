@@ -9,7 +9,7 @@ VJassScanner::VJassScanner()
 
 inline bool isNotFollowedByIdentifier(const QString &currentContent, int length) {
     // TODO Space and operators cannot follow but not text
-    return length == currentContent.length() || !QRegularExpression("[A-Za-z_0-9]{1}").match(currentContent.mid(length, 1)).hasMatch();
+    return length <= currentContent.length() || !QRegularExpression("[A-Za-z_0-9]{1}").match(currentContent.mid(length, 1)).hasMatch();
 }
 
 QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpaces) {
@@ -18,6 +18,7 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
     int column = 0;
 
     // TODO Generated lexers are much faster probably since they have internal state machines going from one symbol to the next.
+    // TODO Use a Symbol table instead of storing all the identifiers for tokens since we often have the same symbol more than once.
     for (int i = 0; i < content.size(); ) {
         // TODO Avoid copying at all cost -> some string view, should not by copied by implicit sharing.
         QString currentContent = content.mid(i);
@@ -27,14 +28,14 @@ QList<VJassToken> VJassScanner::scan(const QString &content, bool dropWhiteSpace
         // boolean literal true
         if (currentContent.startsWith(VJassToken::KEYWORD_TRUE) && isNotFollowedByIdentifier(currentContent, VJassToken::KEYWORD_TRUE.length())) {
             const int length = VJassToken::KEYWORD_TRUE.length();
-            result.push_back(VJassToken(currentContent.mid(i, length), line, column, VJassToken::TrueKeyword));
+            result.push_back(VJassToken(VJassToken::KEYWORD_TRUE, line, column, VJassToken::TrueKeyword));
             column += length;
             i += length;
             matched = true;
         // boolean literal false
         } else if (currentContent.startsWith(VJassToken::KEYWORD_FALSE) && isNotFollowedByIdentifier(currentContent, VJassToken::KEYWORD_FALSE.length())) {
             const int length = VJassToken::KEYWORD_FALSE.length();
-            result.push_back(VJassToken(currentContent.mid(i, length), line, column, VJassToken::FalseKeyword));
+            result.push_back(VJassToken(VJassToken::KEYWORD_FALSE, line, column, VJassToken::FalseKeyword));
             column += length;
             i += length;
             matched = true;

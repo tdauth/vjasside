@@ -97,4 +97,19 @@ void TestHighlightInfo::canOrderCodeElementsFromCommonJ() {
 }
 */
 
+void TestHighlightInfo::canHoldAst() {
+    const QString text = QString("function test takes nothing returns nothing\n")
+            + "call DisplayTextToPlayer\n" //DisplayTextToPlayer(Player(0) , 0.0, 0.0, \"Number \" + I2S(i))
+            + "endfunction"
+            ;
+    VJassScanner scanner;
+    QList<VJassToken> tokens = scanner.scan(text, false);
+    VJassParser parser;
+    VJassAst *ast = parser.parse(tokens);
+
+    HighLightInfo highLightInfo(text, tokens, ast, ast->getAllParseErrors());
+
+    QCOMPARE(highLightInfo.getAstElementsByLocation().size(), 1);
+}
+
 QTEST_MAIN(TestHighlightInfo)

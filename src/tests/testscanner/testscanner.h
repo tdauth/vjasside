@@ -9,6 +9,7 @@ class TestScanner : public QObject
 
     private slots:
         void canScanFunction();
+        void canScanTrueAndFalse();
         void canScanNativesFromCommonJ();
         void canScanRandomCharacters();
         void canScanCommonJ();

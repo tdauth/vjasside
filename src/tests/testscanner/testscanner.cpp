@@ -12,6 +12,15 @@ void TestScanner::canScanFunction()
     QCOMPARE(tokens.size(), 8);
 }
 
+void TestScanner::canScanTrueAndFalse()
+{
+    VJassScanner scanner;
+
+    QList<VJassToken> tokens = scanner.scan("function bla takes nothing returns nothing\nlocal boolean x = false\nlocal boolean y = true\nendfunction");
+
+    QCOMPARE(tokens.size(), 8);
+}
+
 void TestScanner::canScanNativesFromCommonJ() {
     /*
      native GroupEnumUnitsInRangeOfLocCounted    takes group whichGroup, location whichLocation, real radius, boolexpr filter, integer countLimit returns nothing
