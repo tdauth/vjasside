@@ -2,11 +2,11 @@
 
 #include "pjass.h"
 
-PJass::PJass(const QString &filePath, QObject *parent) : QObject(parent), filePath(filePath), process(QProcess(this)) {
+PJass::PJass(const QString &filePath, QObject *parent) : QObject(parent), filePath(filePath), process(this) {
     connect(&process, &QProcess::readyReadStandardOutput, this, &PJass::readStandardOutput);
     connect(&process, &QProcess::readyReadStandardError, this, &PJass::readStandardError);
     connect(&process, &QProcess::errorOccurred, this, &PJass::errorOcurred);
-    connect(&process, &QProcess::finished, this, &PJass::finished);
+    connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), this,  SLOT(PJass::finished(int , QProcess::ExitStatus)));
 }
 
 PJass::PJass(QObject *parent) {

@@ -1,0 +1,15 @@
+language: cpp
+compiler:
+  - gcc
+  - clang
+addons:
+  apt:
+    packages:
+      - qmake
+      - qtbase5-dev
+
+script:
+     - mkdir -p build
+     - cd build
+     - qmake ../
+     - make

@@ -2,11 +2,11 @@
 
 #include "jasshelper.h"
 
-JassHelper::JassHelper(const QString &filePath, QObject *parent) : QObject(parent), filePath(filePath), process(QProcess(this)) {
+JassHelper::JassHelper(const QString &filePath, QObject *parent) : QObject(parent), filePath(filePath), process(this) {
     connect(&process, &QProcess::readyReadStandardOutput, this, &JassHelper::readStandardOutput);
     connect(&process, &QProcess::readyReadStandardError, this, &JassHelper::readStandardError);
     connect(&process, &QProcess::errorOccurred, this, &JassHelper::errorOcurred);
-    connect(&process, &QProcess::finished, this, &JassHelper::finished);
+    connect(&process, SIGNAL(finished(int , QProcess::ExitStatus)), this,  SLOT(JassHelper::finished(int , QProcess::ExitStatus)));
 }
 
 JassHelper::JassHelper(QObject *parent) {

@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QFile>
+#include <QTextStream>
 
 #include "../app/vjassscanner.h"
 #include "../app/vjassparser.h"

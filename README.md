@@ -4,7 +4,7 @@ Simple standalone IDE for the scripting languages JASS and vJass of the computer
 
 ## Automatic Build with TravisCI
 
-[![Build Status](https://travis-ci.org/tdauth/vjasside.svg?branch=master)](https://travis-ci.org/tdauth/vjasside)
+[![Build Status](https://travis-ci.com/tdauth/vjasside.svg?branch=master)](https://travis-ci.org/tdauth/vjasside)
 
 ## Features
 
